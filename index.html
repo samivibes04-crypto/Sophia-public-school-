@@ -125,7 +125,7 @@
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v22");
+            dbRef = firebase.database().ref("sophia_app_data_v23");
         } catch(e) { console.log("Local Storage Mode"); }
 
         let activeRole = 'principal';
@@ -156,8 +156,8 @@
                 }
             },
             teachers: [
-                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A, IX-B', mobile: '9829111111', password: 'teacher123' },
-                { id: 'T102', name: 'Sunil Gupta', subject: 'Science', classAssigned: 'X-A', mobile: '9829222222', password: 'teacher123' }
+                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A, IX-B', mobile: '9269808030', password: 'teacher123' },
+                { id: 'T102', name: 'Sunil Gupta', subject: 'Science', classAssigned: 'X-A', mobile: '9660943531', password: 'teacher123' }
             ]
         };
 
@@ -172,7 +172,10 @@
                 db.sessionsData[db.currentSession] = { students: [], notices: [], messages: [], inventory: [] };
             }
 
-            db.teachers.forEach(t => { if(!t.password) t.password = 'teacher123'; });
+            db.teachers.forEach(t => { 
+                if(!t.password) t.password = 'teacher123';
+                if(!t.mobile) t.mobile = '9269808030';
+            });
             Object.keys(db.sessionsData).forEach(ses => {
                 if(!db.sessionsData[ses].students) db.sessionsData[ses].students = [];
                 if(!db.sessionsData[ses].notices) db.sessionsData[ses].notices = [];
@@ -181,6 +184,7 @@
 
                 db.sessionsData[ses].students.forEach(s => { 
                     if(!s.password) s.password = 'parent123';
+                    if(!s.parentMobile) s.parentMobile = '9269808030';
                     if(!s.homework) s.homework = 'No homework assigned yet.';
                     if(!s.examResults) s.examResults = { halfYearly: 'Not Published', yearly: 'Not Published' };
                 });
@@ -278,7 +282,7 @@
                 const t = db.teachers.find(x => x.id.toLowerCase() === targetId);
                 if(t) {
                     const mobile = t.mobile || '9269808030';
-                    const msg = encodeURIComponent(`Hello ${t.name}, your Sophia School Teacher Portal password is: ${t.password}`);
+                    const msg = encodeURIComponent(`Respected Sir/Madam, your Sophia Public School Teacher Portal password for ID ${t.id} is: ${t.password}`);
                     window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
                 } else {
                     alert("Teacher ID not found!");
@@ -290,8 +294,9 @@
                     if(s) foundS = s;
                 });
                 if(foundS) {
+                    // FETCHING THE EXACT STUDENT'S PARENT MOBILE NUMBER
                     const mobile = foundS.parentMobile || '9269808030';
-                    const msg = encodeURIComponent(`Hello ${foundS.parentName}, your Sophia School Guardian Portal password for student ${foundS.name} (ID: ${foundS.id}) is: ${foundS.password}`);
+                    const msg = encodeURIComponent(`Respected Parent, password recovery request for student ${foundS.name} (Scholar ID: ${foundS.id}). Your Guardian Portal password is: ${foundS.password}`);
                     window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
                 } else {
                     alert("Scholar ID not found!");
@@ -458,7 +463,7 @@
                                     <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
                                     <p class="text-xs text-slate-500">Subject: <span class="font-bold text-slate-800">${t.subject}</span></p>
                                     <p class="text-xs text-slate-500">Classes Assigned: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
-                                    <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span></p>
+                                    <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span> | Mobile: <span class="font-mono">${t.mobile}</span></p>
                                 </div>
                                 <div class="space-y-1">
                                     <button onclick="editTeacherClass('${t.id}')" class="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded border">Classes</button>
@@ -942,11 +947,12 @@
             const parentName = prompt("Enter Father Name:");
             const cls = prompt("Enter Class (e.g. X-A):");
             const pass = prompt("Enter Login Password for Parent/Guardian:");
+            const mob = prompt("Enter Parent Mobile Number (for WhatsApp recovery):", "9269808030");
             const fee = prompt("Enter Total Fee Amount (₹):", "20000");
             if(id && name && cls && pass && fee) {
                 const db = getDB();
                 const sessionData = db.sessionsData[db.currentSession];
-                sessionData.students.push({ id, name, parentName, class: cls, parentMobile: '9269808030', password: pass, totalFee: Number(fee), paidFee: 0, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Not Published', yearly: 'Not Published' }, homework: 'Welcome to new session!' });
+                sessionData.students.push({ id, name, parentName, class: cls, parentMobile: mob ? mob.trim() : '9269808030', password: pass, totalFee: Number(fee), paidFee: 0, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Not Published', yearly: 'Not Published' }, homework: 'Welcome to new session!' });
                 saveDB(db);
                 loadModule('students');
                 alert("Student Added Successfully!");
@@ -964,7 +970,7 @@
             const parentName = prompt("Edit Father Name:", s.parentName);
             const cls = prompt("Edit Class:", s.class);
             const pass = prompt("Edit Password:", s.password);
-            const mob = prompt("Edit Mobile:", s.parentMobile);
+            const mob = prompt("Edit Parent Mobile (WhatsApp):", s.parentMobile || '9269808030');
 
             if(newId && name && cls && pass) {
                 const trimmedNewId = newId.trim();
@@ -984,7 +990,7 @@
                 s.parentName = parentName;
                 s.class = cls;
                 s.password = pass;
-                s.parentMobile = mob;
+                s.parentMobile = mob ? mob.trim() : s.parentMobile;
 
                 saveDB(db);
                 loadModule('students');
@@ -998,9 +1004,10 @@
             const subject = prompt("Subject Assigned (e.g. Mathematics, Science):");
             const cls = prompt("Assign Classes (comma separated, e.g. X-A, IX-B):");
             const pass = prompt("Login Password:");
+            const mob = prompt("Teacher Mobile Number (for WhatsApp):", "9269808030");
             if(id && name && cls && pass) {
                 const db = getDB();
-                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: '9269808030', password: pass });
+                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: mob ? mob.trim() : '9269808030', password: pass });
                 saveDB(db);
                 loadModule('teachers');
                 alert("Teacher Added Successfully!");
@@ -1026,10 +1033,12 @@
             const name = prompt("Edit Teacher Name:", t.name);
             const sub = prompt("Edit Subject:", t.subject);
             const pass = prompt("Edit Password:", t.password);
+            const mob = prompt("Edit Teacher Mobile:", t.mobile || '9269808030');
             if(name && sub && pass) {
                 t.name = name;
                 t.subject = sub;
                 t.password = pass;
+                t.mobile = mob ? mob.trim() : t.mobile;
                 saveDB(db);
                 loadModule('teachers');
                 alert("Teacher info updated!");
