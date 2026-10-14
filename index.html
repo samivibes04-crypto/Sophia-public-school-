@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sophia School - Management Portal</title>
-    <!-- Tailwind CSS -->
+    <title>Sophia School - Complete Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
 
@@ -16,11 +21,9 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
             <div class="text-center mb-6">
-                <div class="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-3 shadow-lg">
-                    SPS
-                </div>
+                <div class="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-3 shadow-lg">SPS</div>
                 <h1 class="text-2xl font-bold text-slate-800">SOPHIA SCHOOL</h1>
-                <p class="text-xs text-slate-500">Tonk, Rajasthan | Cloud Management System</p>
+                <p class="text-xs text-slate-500">Tonk, Rajasthan | Management Portal</p>
             </div>
 
             <!-- Role Selector -->
@@ -32,8 +35,8 @@
 
             <form id="login-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1" id="lbl-username">Username</label>
-                    <input type="text" id="login-username" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Enter ID/Username">
+                    <label class="block text-xs font-medium text-slate-700 mb-1" id="lbl-username">Username / ID</label>
+                    <input type="text" id="login-username" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Enter ID">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-700 mb-1">Password</label>
@@ -43,86 +46,114 @@
             </form>
 
             <div class="mt-6 pt-4 border-t text-center">
-                <p class="text-xs text-slate-400 mb-2">Instant Quick Login Buttons:</p>
+                <p class="text-xs text-slate-400 mb-2">Quick Demo Access:</p>
                 <div class="flex justify-center gap-2 text-xs">
-                    <button type="button" onclick="autoLogin('principal','principal','admin123')" class="px-3 py-1.5 bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-lg">1-Click Principal</button>
-                    <button type="button" onclick="autoLogin('teacher','T101','teacher123')" class="px-3 py-1.5 bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 rounded-lg">1-Click Teacher</button>
-                    <button type="button" onclick="autoLogin('guardian','STU101','parent123')" class="px-3 py-1.5 bg-amber-50 text-amber-900 font-bold border border-amber-200 rounded-lg">1-Click Parent</button>
+                    <button type="button" onclick="autoLogin('principal','principal','admin123')" class="px-3 py-1.5 bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-lg">Principal</button>
+                    <button type="button" onclick="autoLogin('teacher','T101','teacher123')" class="px-3 py-1.5 bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 rounded-lg">Teacher</button>
+                    <button type="button" onclick="autoLogin('guardian','STU101','parent123')" class="px-3 py-1.5 bg-amber-50 text-amber-900 font-bold border border-amber-200 rounded-lg">Guardian</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- DASHBOARD MAIN APP -->
+    <!-- MAIN APP DASHBOARD -->
     <div id="main-dashboard" class="hidden min-h-screen flex flex-col md:flex-row">
-        <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 p-4">
-            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-800">
-                <div class="w-10 h-10 bg-blue-800 rounded-full flex items-center justify-center font-bold text-sm">SPS</div>
-                <div>
-                    <h2 class="font-bold text-sm">SOPHIA SCHOOL</h2>
-                    <span id="role-badge" class="text-[10px] bg-blue-700 px-2 py-0.5 rounded text-blue-100 font-bold">PRINCIPAL</span>
+        <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 p-4 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-800">
+                    <div class="w-10 h-10 bg-blue-800 rounded-full flex items-center justify-center font-bold text-sm">SPS</div>
+                    <div>
+                        <h2 class="font-bold text-sm">SOPHIA SCHOOL</h2>
+                        <span id="role-badge" class="text-[10px] bg-blue-700 px-2 py-0.5 rounded text-blue-100 font-bold">PRINCIPAL</span>
+                    </div>
                 </div>
+                <nav id="nav-links" class="space-y-1"></nav>
             </div>
-            <nav id="nav-links" class="space-y-1"></nav>
-            <div class="pt-6 mt-6 border-t border-slate-800">
-                <button type="button" onclick="logoutApp()" class="w-full py-2 bg-red-600/20 text-red-400 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition">Logout System</button>
+            <div class="pt-4 border-t border-slate-800">
+                <button type="button" onclick="logoutApp()" class="w-full py-2 bg-red-600/20 text-red-400 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition">Logout</button>
             </div>
         </aside>
 
-        <!-- Dynamic Content View -->
         <main class="flex-1 p-6 overflow-y-auto">
             <div id="app-view"></div>
         </main>
     </div>
 
-    <!-- JAVASCRIPT CONTROLLER -->
+    <!-- PRINTABLE RECEIPT -->
+    <div id="printable-receipt" class="hidden p-8 bg-white max-w-xl mx-auto border my-10 shadow-lg">
+        <div class="text-center border-b pb-4 mb-4">
+            <h1 class="text-2xl font-bold text-blue-900">SOPHIA SCHOOL</h1>
+            <p class="text-xs text-slate-500">Tonk District, Rajasthan | Contact: +91 98290XXXXX</p>
+            <span class="inline-block bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded font-semibold mt-2">OFFICIAL FEE RECEIPT</span>
+        </div>
+        <div class="flex justify-between text-xs mb-4">
+            <div>
+                <p><strong>Receipt No:</strong> <span id="rcpt-no">REC-1001</span></p>
+                <p><strong>Student Name:</strong> <span id="rcpt-name">---</span></p>
+                <p><strong>Scholar ID:</strong> <span id="rcpt-id">---</span></p>
+            </div>
+            <div class="text-right">
+                <p><strong>Date:</strong> <span id="rcpt-date">---</span></p>
+                <p><strong>Class:</strong> <span id="rcpt-class">---</span></p>
+            </div>
+        </div>
+        <table class="w-full text-xs text-left border-collapse border border-slate-200 mb-6">
+            <thead><tr class="bg-slate-50"><th class="border p-2">Description</th><th class="border p-2 text-right">Amount (₹)</th></tr></thead>
+            <tbody>
+                <tr><td class="border p-2">School Tuition & Development Fee Paid</td><td class="border p-2 text-right font-bold" id="rcpt-amt">0</td></tr>
+            </tbody>
+        </table>
+        <div class="flex justify-between items-end pt-6 text-xs">
+            <p class="text-slate-400">Computer generated receipt.</p>
+            <div class="text-center">
+                <div class="w-32 border-b border-slate-400 mb-1"></div>
+                <p class="font-semibold">Accounts Officer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT ENGINE -->
     <script>
-        // Firebase Cloud Data Initialization
-        const firebaseConfig = {
-            databaseURL: "https://sophia-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app"
-        };
-        
+        const firebaseConfig = { databaseURL: "https://sophia-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app" };
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v2");
-        } catch(e) { console.log("Local Storage Mode Active"); }
+            dbRef = firebase.database().ref("sophia_app_data_v3");
+        } catch(e) { console.log("Local Storage Mode"); }
 
         let activeRole = 'principal';
-        
-        const initialData = {
+        let loggedInUser = 'principal';
+
+        const defaultData = {
             students: [
-                { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: 92, result: 'A Grade (88%)', homework: 'Maths Chapter 5 Ex 5.2' },
-                { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: 96, result: 'A+ Grade (94%)', homework: 'Science Diagram Practice' }
+                { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {} },
+                { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {} }
+            ],
+            teachers: [
+                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A', mobile: '9829111111', password: 'teacher123' }
             ],
             notices: [
-                { id: 1, title: 'Half-Yearly Examination Schedule', content: 'Exams start from Oct 20. Timetable uploaded.', date: '2026-10-10' }
+                { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10' }
             ],
             messages: [
-                { sender: 'Teacher', text: 'Aarav ne aaj test me top kiya hai!' }
+                { sender: 'Teacher (T101)', text: 'Aarav ne aaj test me top kiya hai!', time: '10:30 AM' }
             ]
         };
 
-        function getDBData() {
-            const local = localStorage.getItem('sophia_school_db');
-            return local ? JSON.parse(local) : initialData;
+        function getDB() {
+            const data = localStorage.getItem('sophia_school_db');
+            return data ? JSON.parse(data) : defaultData;
         }
 
-        function saveDBData(data) {
+        function saveDB(data) {
             localStorage.setItem('sophia_school_db', JSON.stringify(data));
             if(dbRef) dbRef.set(data);
         }
 
-        // Live Cloud Sync Listener
         if(dbRef) {
-            dbRef.on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(data) {
-                    localStorage.setItem('sophia_school_db', JSON.stringify(data));
-                } else {
-                    dbRef.set(initialData);
-                }
+            dbRef.on('value', (snap) => {
+                if(snap.val()) localStorage.setItem('sophia_school_db', JSON.stringify(snap.val()));
+                else dbRef.set(defaultData);
             });
         }
 
@@ -130,13 +161,9 @@
             activeRole = role;
             ['principal', 'teacher', 'guardian'].forEach(r => {
                 const btn = document.getElementById(`btn-role-${r}`);
-                if(r === role) {
-                    btn.className = "flex-1 py-2 text-xs font-semibold rounded-md bg-white text-blue-900 shadow";
-                } else {
-                    btn.className = "flex-1 py-2 text-xs font-semibold rounded-md text-slate-600";
-                }
+                btn.className = r === role ? "flex-1 py-2 text-xs font-semibold rounded-md bg-white text-blue-900 shadow" : "flex-1 py-2 text-xs font-semibold rounded-md text-slate-600";
             });
-            document.getElementById('lbl-username').innerText = role === 'guardian' ? "Scholar ID / Mobile No" : "Username";
+            document.getElementById('lbl-username').innerText = role === 'guardian' ? "Scholar ID (e.g. STU101)" : (role === 'teacher' ? "Teacher ID (e.g. T101)" : "Username");
         }
 
         function autoLogin(role, u, p) {
@@ -152,11 +179,30 @@
         });
 
         function startLogin() {
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            const db = getDB();
+
+            if(activeRole === 'principal' && u === 'principal' && p === 'admin123') {
+                loggedInUser = 'principal';
+                initDashboard();
+            } else if(activeRole === 'teacher') {
+                const t = db.teachers.find(x => x.id === u && x.password === p);
+                if(t) { loggedInUser = t.id; initDashboard(); } else { alert('Invalid Teacher ID or Password'); }
+            } else if(activeRole === 'guardian') {
+                const s = db.students.find(x => x.id === u && x.password === p);
+                if(s) { loggedInUser = s.id; initDashboard(); } else { alert('Invalid Scholar ID or Password'); }
+            } else if(activeRole === 'principal') {
+                alert('Invalid Principal Credentials');
+            }
+        }
+
+        function initDashboard() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-dashboard').classList.remove('hidden');
             document.getElementById('role-badge').innerText = activeRole.toUpperCase();
-            buildSidebarNav();
-            loadModule(activeRole === 'principal' ? 'fees' : (activeRole === 'guardian' ? 'guardian' : 'teacher'));
+            buildNav();
+            loadModule(activeRole === 'principal' ? 'fees' : (activeRole === 'teacher' ? 'teacher-attendance' : 'guardian-portal'));
         }
 
         function logoutApp() {
@@ -164,18 +210,20 @@
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
-        function buildSidebarNav() {
+        function buildNav() {
             const nav = document.getElementById('nav-links');
             nav.innerHTML = '';
             let menu = activeRole === 'principal' ? [
-                { id: 'fees', label: 'Fee Collection & Records' },
-                { id: 'students', label: 'Classwise Students' },
-                { id: 'notices', label: 'Publish Notice' }
+                { id: 'fees', label: 'Fee Records & Collection' },
+                { id: 'students', label: 'Manage Students' },
+                { id: 'teachers', label: 'Manage Teachers' },
+                { id: 'notices', label: 'Publish Notices' }
             ] : (activeRole === 'teacher' ? [
-                { id: 'teacher', label: 'Attendance & Homework' },
-                { id: 'chat', label: 'Parent Chat' }
+                { id: 'teacher-attendance', label: 'Class Attendance' },
+                { id: 'teacher-marks', label: 'Test Marks & Grades' },
+                { id: 'chat', label: 'Parent-Teacher Chat' }
             ] : [
-                { id: 'guardian', label: 'Child Dashboard' },
+                { id: 'guardian-portal', label: 'Child Dashboard' },
                 { id: 'chat', label: 'Teacher Chat' }
             ]);
 
@@ -183,22 +231,22 @@
                 const b = document.createElement('button');
                 b.className = "w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:bg-slate-800 transition";
                 b.innerText = m.label;
-                b.onclick = function() { loadModule(m.id); };
+                b.onclick = () => loadModule(m.id);
                 nav.appendChild(b);
             });
         }
 
         function loadModule(mod) {
-            const db = getDBData();
+            const db = getDB();
             const view = document.getElementById('app-view');
 
             if(mod === 'fees') {
                 view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-4">Fee Collection & Receipts</h2>
-                    <div class="bg-white rounded-xl border p-4">
+                    <h2 class="text-2xl font-bold mb-4">Fee Records & Collection</h2>
+                    <div class="bg-white rounded-xl border p-4 overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="border-b text-xs text-slate-400">
-                                <tr><th class="py-2">Student</th><th class="py-2">Class</th><th class="py-2">Total</th><th class="py-2">Paid</th><th class="py-2">Prev. Due</th><th class="py-2">Action</th></tr>
+                                <tr><th class="py-2">Student</th><th class="py-2">Class</th><th class="py-2">Total Fee</th><th class="py-2">Paid</th><th class="py-2">Due</th><th class="py-2">Prev. Due</th><th class="py-2 text-center">Actions</th></tr>
                             </thead>
                             <tbody>
                                 ${db.students.map(s => `
@@ -207,32 +255,48 @@
                                         <td>${s.class}</td>
                                         <td>₹${s.totalFee}</td>
                                         <td class="text-emerald-600 font-bold">₹${s.paidFee}</td>
+                                        <td class="text-amber-600 font-bold">₹${s.totalFee - s.paidFee}</td>
                                         <td class="text-red-600 font-bold">₹${s.prevDue || 0}</td>
-                                        <td><button onclick="collectFee('${s.id}')" class="px-3 py-1 bg-blue-900 text-white rounded text-xs">+ Collect</button></td>
-                                    </tr>
-                                `).join('')}
+                                        <td class="text-center space-x-1">
+                                            <button onclick="collectFee('${s.id}')" class="px-2.5 py-1 bg-blue-900 text-white rounded text-xs">+ Collect</button>
+                                            <button onclick="printReceipt('${s.id}')" class="px-2.5 py-1 bg-slate-200 rounded text-xs">Receipt</button>
+                                        </td>
+                                    </tr>`).join('')}
                             </tbody>
                         </table>
                     </div>`;
             } else if(mod === 'students') {
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Classwise Students</h2>
-                        <button onclick="addNewStudent()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add Student</button>
+                        <h2 class="text-2xl font-bold">Manage Students</h2>
+                        <button onclick="addNewStudent()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Student</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${db.students.map(s => `
                             <div class="bg-white p-4 rounded-xl border">
-                                <h3 class="font-bold text-slate-800">${s.name}</h3>
+                                <h3 class="font-bold text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></h3>
                                 <p class="text-xs text-slate-500">Father: ${s.parentName} \vert{} Class:${s.class}</p>
-                                <p class="text-xs text-slate-500">Mobile: ${s.parentMobile}</p>
-                            </div>
-                        `).join('')}
+                                <p class="text-xs text-slate-500">Login Password: <span class="font-mono font-bold">${s.password}</span> \vert{} Mobile:${s.parentMobile}</p>
+                            </div>`).join('')}
+                    </div>`;
+            } else if(mod === 'teachers') {
+                view.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">Manage Teachers</h2>
+                        <button onclick="addNewTeacher()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Teacher</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${db.teachers.map(t => `
+                            <div class="bg-white p-4 rounded-xl border">
+                                <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
+                                <p class="text-xs text-slate-500">Subject: ${t.subject} \vert{} Assigned Class:${t.classAssigned}</p>
+                                <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span></p>
+                            </div>`).join('')}
                     </div>`;
             } else if(mod === 'notices') {
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Notice Board</h2>
+                        <h2 class="text-2xl font-bold">Publish Notices</h2>
                         <button onclick="addNotice()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ New Notice</button>
                     </div>
                     <div class="space-y-3">
@@ -241,60 +305,28 @@
                                 <h3 class="font-bold text-slate-800">${n.title}</h3>
                                 <p class="text-sm text-slate-600 mt-1">${n.content}</p>
                                 <span class="text-xs text-slate-400 mt-2 block">${n.date}</span>
-                            </div>
-                        `).join('')}
+                            </div>`).join('')}
                     </div>`;
-            } else if(mod === 'guardian') {
-                const s = db.students[0];
+            } else if(mod === 'teacher-attendance') {
+                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
+                const classStudents = db.students.filter(x => x.class === t.classAssigned);
+                const today = new Date().toISOString().slice(0,10);
                 view.innerHTML = `
-                    <div class="bg-blue-900 text-white p-6 rounded-xl mb-6">
-                        <h2 class="text-2xl font-bold">${s.name}</h2>
-                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id}</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${s.totalFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${s.paidFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-red-600">Previous Due</p><p class="text-xl font-bold text-red-600">₹${s.prevDue}</p></div>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border">
-                        <h3 class="font-bold text-sm mb-1">Homework</h3>
-                        <p class="text-sm text-slate-700 bg-slate-50 p-3 rounded">${s.homework}</p>
+                    <h2 class="text-2xl font-bold mb-2">Daily Attendance</h2>
+                    <p class="text-xs text-slate-500 mb-4">Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span> | Date: ${today}</p>
+                    <div class="bg-white rounded-xl border p-4 space-y-3">
+                        ${classStudents.map(s => {
+                            const status = (s.attendance && s.attendance[today]) ? s.attendance[today] : 'Present';
+                            return `
+                                <div class="flex justify-between items-center p-2 border-b">
+                                    <span class="text-sm font-semibold">${s.name} (${s.id})</span>
+                                    <select onchange="markAttendance('${s.id}', this.value)" class="border p-1.5 rounded text-xs font-bold ${status === 'Present' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}">
+                                        <option value="Present" ${status==='Present'?'selected':''}>Present</option>
+                                        <option value="Absent" ${status==='Absent'?'selected':''}>Absent</option>
+                                    </select>
+                                </div>`;
+                        }).join('')}
                     </div>`;
-            }
-        }
-
-        function collectFee(id) {
-            const db = getDBData();
-            const s = db.students.find(x => x.id === id);
-            const amt = prompt(`Enter Fee Amount collected for ${s.name}:`);
-            if(amt) {
-                s.paidFee = Number(s.paidFee) + Number(amt);
-                saveDBData(db);
-                loadModule('fees');
-            }
-        }
-
-        function addNewStudent() {
-            const name = prompt("Enter Student Name:");
-            const cls = prompt("Enter Class:");
-            if(name && cls) {
-                const db = getDBData();
-                db.students.push({ id: 'STU' + (100 + db.students.length + 1), name, parentName: 'Guardian', class: cls, parentMobile: '9829000000', totalFee: 20000, paidFee: 0, prevDue: 0, attendance: 100, result: 'N/A', homework: 'Welcome' });
-                saveDBData(db);
-                loadModule('students');
-            }
-        }
-
-        function addNotice() {
-            const title = prompt("Enter Notice Title:");
-            const content = prompt("Enter Notice Content:");
-            if(title && content) {
-                const db = getDBData();
-                db.notices.unshift({ id: Date.now(), title, content, date: new Date().toISOString().slice(0,10) });
-                saveDBData(db);
-                loadModule('notices');
-            }
-        }
-    </script>
-</body>
-</html>
+            } else if(mod === 'teacher-marks') {
+                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
+                const classStuden
