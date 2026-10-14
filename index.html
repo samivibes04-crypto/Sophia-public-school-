@@ -24,6 +24,7 @@
                 <div class="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-3 shadow-lg">SPS</div>
                 <h1 class="text-2xl font-bold text-slate-800">SOPHIA PUBLIC SCHOOL</h1>
                 <p class="text-xs text-slate-500">Moti Bagh Road, Barkat Colony, Tonk, Rajasthan - 304001</p>
+                <p class="text-[10px] text-emerald-600 font-bold mt-1">● OFFICIAL PORTAL</p>
             </div>
 
             <!-- Role Selector -->
@@ -47,15 +48,6 @@
 
             <div class="mt-4 text-center">
                 <button type="button" onclick="forgotPasswordPrompt()" class="text-xs font-bold text-blue-800 hover:underline">Forgot Password? (Get via WhatsApp)</button>
-            </div>
-
-            <div class="mt-6 pt-4 border-t text-center">
-                <p class="text-xs text-slate-400 mb-2">Quick 1-Click Access:</p>
-                <div class="flex justify-center gap-2 text-xs">
-                    <button type="button" onclick="autoLogin('principal','principal','admin123')" class="px-3 py-1.5 bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-lg">Principal</button>
-                    <button type="button" onclick="autoLogin('teacher','T101','teacher123')" class="px-3 py-1.5 bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 rounded-lg">Teacher</button>
-                    <button type="button" onclick="autoLogin('guardian','STU101','parent123')" class="px-3 py-1.5 bg-amber-50 text-amber-900 font-bold border border-amber-200 rounded-lg">Guardian</button>
-                </div>
             </div>
         </div>
     </div>
@@ -121,15 +113,14 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
-        // OFFICIAL FIREBASE CONFIGURATION FOR REALTIME CLOUD SYNC
         const firebaseConfig = { 
-            databaseURL: "https://sophia-public-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app" 
+            databaseURL: "https://sophia-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app" 
         };
         
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_school_main_db_v1");
+            dbRef = firebase.database().ref("sophia_public_school_tonk_master_db");
         } catch(e) { console.log("Firebase Init Error:", e); }
 
         let activeRole = 'principal';
@@ -143,26 +134,15 @@
             currentSession: '2026-2027',
             sessionsData: {
                 '2026-2027': {
-                    students: [
-                        { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9269808030', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50', yearly: 'Pending' }, homework: 'Complete Maths Ex 5.2' },
-                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9660943531', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' },
-                        { id: 'STU103', name: 'Rahul Saini', parentName: 'Kailash Saini', class: 'IX-B', parentMobile: '9269808030', password: 'parent123', totalFee: 22000, paidFee: 15000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 40/50', yearly: 'Pending' }, homework: 'Maths Theorem 2.1 Notes' }
-                    ],
+                    students: [],
                     notices: [
-                        { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10', fileUrl: '', fileName: '' }
+                        { id: 1, title: 'Welcome to Sophia Public School Portal', content: 'Academic session 2026-2027 portal is now live.', date: '2026-10-14', fileUrl: '', fileName: '' }
                     ],
-                    messages: [
-                        { studentId: 'STU101', subject: 'Mathematics', sender: 'Teacher (Rohit Sharma)', text: 'Aarav is performing excellent in Maths!', time: '10:30 AM' }
-                    ],
-                    inventory: [
-                        { id: 1, itemName: 'A4 Printing Paper Bundles', category: 'Stationery', totalIn: 50, totalOut: 12, unit: 'Bundles', lastUpdated: '2026-10-01' }
-                    ]
+                    messages: [],
+                    inventory: []
                 }
             },
-            teachers: [
-                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A, IX-B', mobile: '9269808030', password: 'teacher123' },
-                { id: 'T102', name: 'Sunil Gupta', subject: 'Science', classAssigned: 'X-A', mobile: '9660943531', password: 'teacher123' }
-            ]
+            teachers: []
         };
 
         function getDB() {
@@ -200,11 +180,10 @@
         function saveDB(data) {
             localStorage.setItem('sophia_school_db', JSON.stringify(data));
             if(dbRef) {
-                dbRef.set(data).catch(err => console.log("Firebase Save Error:", err));
+                dbRef.set(data).catch(err => console.log("Cloud Sync Failed:", err));
             }
         }
 
-        // REALTIME LISTENER FOR INSTANT CLOUD SYNC ACROSS ALL DEVICES
         if(dbRef) {
             dbRef.on('value', (snap) => {
                 const val = snap.val();
@@ -217,8 +196,6 @@
                 } else {
                     dbRef.set(defaultData);
                 }
-            }, (error) => {
-                console.log("Firebase Read Error:", error);
             });
         }
 
@@ -229,13 +206,6 @@
                 btn.className = r === role ? "flex-1 py-2 text-xs font-semibold rounded-md bg-white text-blue-900 shadow" : "flex-1 py-2 text-xs font-semibold rounded-md text-slate-600";
             });
             document.getElementById('lbl-username').innerText = role === 'guardian' ? "Scholar ID (e.g. STU101)" : (role === 'teacher' ? "Teacher ID (e.g. T101)" : "Username");
-        }
-
-        function autoLogin(role, u, p) {
-            selectRole(role);
-            document.getElementById('login-username').value = u;
-            document.getElementById('login-password').value = p;
-            startLogin();
         }
 
         document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -257,24 +227,24 @@
                 }
             } else if(activeRole === 'teacher') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === u);
-                if((t && t.password === p) || (u === 't101' && p === 'teacher123')) {
-                    loggedInUser = t ? t.id : 'T101';
+                if(t && t.password === p) {
+                    loggedInUser = t.id;
                     initDashboard();
                 } else {
-                    alert('Invalid Teacher Credentials!');
+                    alert('Invalid Teacher Credentials or ID not found!');
                 }
             } else if(activeRole === 'guardian') {
                 let foundStudent = null;
                 Object.keys(db.sessionsData).forEach(ses => {
                     const s = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === u);
-                    if(s && (s.password === p || p === 'parent123')) foundStudent = s;
+                    if(s && s.password === p) foundStudent = s;
                 });
 
-                if(foundStudent || (u === 'stu101' && p === 'parent123')) {
-                    loggedInUser = foundStudent ? foundStudent.id : 'STU101';
+                if(foundStudent) {
+                    loggedInUser = foundStudent.id;
                     initDashboard();
                 } else {
-                    alert('Invalid Guardian Credentials!');
+                    alert('Invalid Scholar ID or Password!');
                 }
             }
         }
@@ -413,7 +383,7 @@
                                 <tr><th class="py-2">Student</th><th class="py-2">Class</th><th class="py-2">Total Fee</th><th class="py-2">Paid</th><th class="py-2">Due</th><th class="py-2">Prev. Due</th><th class="py-2 text-center">Actions</th></tr>
                             </thead>
                             <tbody>
-                                ${sessionData.students.length === 0 ? '<tr><td colspan="7" class="text-center py-4 text-xs text-slate-400">No students in session ' + currSession + '.</td></tr>' : sessionData.students.map(s => `
+                                ${sessionData.students.length === 0 ? '<tr><td colspan="7" class="text-center py-6 text-xs text-slate-400">No students added in session ' + currSession + ' yet. Click "Classwise Students" to add new students.</td></tr>' : sessionData.students.map(s => `
                                     <tr class="border-b">
                                         <td class="py-3 font-semibold">${s.name}<br><span class="text-xs text-slate-400">ID: ${s.id}</span></td>
                                         <td>${s.class}</td>
@@ -441,11 +411,11 @@
                         <button onclick="addNewStudent()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add Student</button>
                     </div>
                     <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-                        ${classes.length === 0 ? '<span class="text-xs text-slate-400">No students in this session.</span>' : classes.map(c => `<button onclick="selectedClassView='${c}'; loadModule('students')" class="px-4 py-2 rounded-lg text-xs font-bold ${c === selectedClassView ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">Class ${c} (${sessionData.students.filter(s=>s.class===c).length})</button>`).join('')}
+                        ${classes.length === 0 ? '<span class="text-xs text-slate-400">No students added yet. Click "+ Add Student" to start.</span>' : classes.map(c => `<button onclick="selectedClassView='${c}'; loadModule('students')" class="px-4 py-2 rounded-lg text-xs font-bold ${c === selectedClassView ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">Class ${c} (${sessionData.students.filter(s=>s.class===c).length})</button>`).join('')}
                     </div>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
                         <h3 class="font-bold text-sm text-blue-900 mb-2">Class: ${selectedClassView || 'None'}</h3>
-                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in this class view.</p>' : classStudents.map(s => `
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in this class.</p>' : classStudents.map(s => `
                             <div class="p-3 border rounded-lg bg-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                                 <div>
                                     <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></p>
@@ -466,7 +436,7 @@
                         <button onclick="addNewTeacher()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add Teacher</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${db.teachers.map(t => `
+                        ${db.teachers.length === 0 ? '<p class="text-xs text-slate-400 col-span-2 text-center py-6">No teachers added yet. Click "+ Add Teacher" above.</p>' : db.teachers.map(t => `
                             <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
                                 <div>
                                     <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
@@ -524,6 +494,10 @@
                     </div>`;
             } else if(mod === 'teacher-students') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                if(!t) {
+                    view.innerHTML = `<p class="text-xs text-red-500">Teacher profile not found.</p>`;
+                    return;
+                }
                 const classesSelectorHtml = renderTeacherClassSelector(t);
                 const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
 
@@ -549,6 +523,7 @@
                     </div>`;
             } else if(mod === 'teacher-attendance') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                if(!t) return;
                 const classesSelectorHtml = renderTeacherClassSelector(t);
                 const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
                 const today = new Date().toISOString().slice(0,10);
@@ -574,6 +549,7 @@
                     </div>`;
             } else if(mod === 'teacher-marks') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                if(!t) return;
                 const classesSelectorHtml = renderTeacherClassSelector(t);
                 const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
 
@@ -610,6 +586,7 @@
                     </div>`;
             } else if(mod === 'teacher-homework') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                if(!t) return;
                 const classesSelectorHtml = renderTeacherClassSelector(t);
                 const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
 
@@ -627,28 +604,27 @@
                             </div>`).join('')}
                     </div>`;
             } else if(mod === 'guardian-portal') {
-                let student = null;
-                Object.keys(db.sessionsData).forEach(ses => {
-                    const found = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase());
-                    if(found) student = found;
-                });
-                const s = student || sessionData.students[0] || { name: 'Demo Student', id: 'STU101', class: 'X-A', totalFee: 20000, paidFee: 0 };
+                let student = sessionData.students.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase());
+                if(!student) {
+                    view.innerHTML = `<div class="bg-white p-8 rounded-xl border text-center"><p class="text-sm font-bold text-red-600">Student data not found for ID: ${loggedInUser}</p></div>`;
+                    return;
+                }
                 
                 view.innerHTML = `
                     <div class="bg-blue-900 text-white p-6 rounded-xl mb-6 shadow-lg">
-                        <h2 class="text-2xl font-bold">${s.name}</h2>
-                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id} | Session: ${currSession}</p>
+                        <h2 class="text-2xl font-bold">${student.name}</h2>
+                        <p class="text-xs text-blue-200">Class: ${student.class} | Scholar ID: ${student.id} | Session: ${currSession}</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${s.totalFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${s.paidFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-red-600">Remaining Due</p><p class="text-xl font-bold text-red-600">₹${s.totalFee - s.paidFee}</p></div>
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${student.totalFee}</p></div>
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${student.paidFee}</p></div>
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-red-600">Remaining Due</p><p class="text-xl font-bold text-red-600">₹${student.totalFee - student.paidFee}</p></div>
                     </div>
 
                     <div class="bg-white rounded-xl border p-5 mb-6 shadow-sm">
                         <h3 class="font-bold text-sm text-blue-900 mb-2 flex items-center gap-2">📖 Daily Homework & Class Updates</h3>
-                        <div class="bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 font-medium">${s.homework || 'No homework assigned today.'}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 font-medium">${student.homework || 'No homework assigned today.'}</div>
                     </div>
 
                     <div class="bg-white rounded-xl border p-5 mb-6 shadow-sm">
@@ -656,11 +632,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                 <h4 class="font-bold text-xs text-blue-900 uppercase">Half-Yearly Examination</h4>
-                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.halfYearly ? s.examResults.halfYearly : 'Result pending.'}</p>
+                                <p class="text-sm text-slate-700 font-medium mt-1">${student.examResults && student.examResults.halfYearly ? student.examResults.halfYearly : 'Result pending.'}</p>
                             </div>
                             <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
                                 <h4 class="font-bold text-xs text-emerald-900 uppercase">Yearly / Annual Examination</h4>
-                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.yearly ? s.examResults.yearly : 'Result pending.'}</p>
+                                <p class="text-sm text-slate-700 font-medium mt-1">${student.examResults && student.examResults.yearly ? student.examResults.yearly : 'Result pending.'}</p>
                             </div>
                         </div>
                     </div>
@@ -668,38 +644,33 @@
                     <div class="bg-white rounded-xl border p-5 shadow-sm">
                         <h3 class="font-bold text-sm text-blue-900 mb-3 flex items-center gap-2">📝 Weekly & Surprise Test Marks</h3>
                         <div class="space-y-2">
-                            ${!s.testMarks || Object.keys(s.testMarks).length === 0 ? '<p class="text-xs text-slate-400">No test marks entered yet.</p>' : Object.keys(s.testMarks).map(subj => `
+                            ${!student.testMarks || Object.keys(student.testMarks).length === 0 ? '<p class="text-xs text-slate-400">No test marks entered yet.</p>' : Object.keys(student.testMarks).map(subj => `
                                 <div class="flex justify-between items-center p-3 rounded-lg bg-slate-50 border text-xs">
                                     <span class="font-bold text-slate-700">${subj}</span>
-                                    <span class="font-mono font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">${s.testMarks[subj]}</span>
+                                    <span class="font-mono font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">${student.testMarks[subj]}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>`;
             } else if(mod === 'chat') {
-                let currentStudentId = loggedInUser;
-                let student = null;
-                Object.keys(db.sessionsData).forEach(ses => {
-                    const found = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === currentStudentId.toLowerCase());
-                    if(found) student = found;
-                });
-                const s = student || sessionData.students[0] || { class: 'X-A' };
+                let student = sessionData.students.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase());
+                if(!student) return;
 
                 const classTeachers = db.teachers.filter(t => {
                     const assignedList = getTeacherAssignedClasses(t);
-                    return assignedList.includes(s.class);
+                    return assignedList.includes(student.class);
                 });
 
                 if(!selectedChatSubject && classTeachers.length > 0) selectedChatSubject = classTeachers[0].subject;
 
                 const chatMessages = (sessionData.messages || []).filter(m => 
-                    m.studentId.toLowerCase() === currentStudentId.toLowerCase() && 
+                    m.studentId.toLowerCase() === loggedInUser.toLowerCase() && 
                     m.subject.toLowerCase() === selectedChatSubject.toLowerCase()
                 );
 
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Subject-wise Teacher Chat</h2>
-                    <p class="text-xs text-slate-500 mb-4">Class: <span class="font-bold text-blue-900">${s.class}</span> | Student: <span class="font-bold text-blue-900">${s.name || loggedInUser}</span></p>
+                    <p class="text-xs text-slate-500 mb-4">Class: <span class="font-bold text-blue-900">${student.class}</span> | Student: <span class="font-bold text-blue-900">${student.name}</span></p>
 
                     <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
                         ${classTeachers.length === 0 ? '<p class="text-xs text-slate-400">No subject teachers assigned to your class yet.</p>' : classTeachers.map(t => `
@@ -720,7 +691,7 @@
 
                     <div class="flex gap-2">
                         <input type="text" id="chat-msg" placeholder="Ask something to ${selectedChatSubject} Teacher..." class="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
-                        <button onclick="sendChatMessage('${currentStudentId}', '${selectedChatSubject}')" class="px-5 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs hover:bg-blue-800 transition">Send Message</button>
+                        <button onclick="sendChatMessage('${loggedInUser}', '${selectedChatSubject}')" class="px-5 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs hover:bg-blue-800 transition">Send Message</button>
                     </div>`;
             } else if(mod === 'teacher-chat-direct') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
@@ -951,7 +922,7 @@
         }
 
         function addNewStudent() {
-            const id = prompt("Enter Custom Scholar ID (e.g. STU105):");
+            const id = prompt("Enter Custom Scholar ID (e.g. STU101):");
             const name = prompt("Enter Student Name:");
             const parentName = prompt("Enter Father Name:");
             const cls = prompt("Enter Class (e.g. X-A):");
@@ -1008,7 +979,7 @@
         }
 
         function addNewTeacher() {
-            const id = prompt("Teacher ID (e.g. T105):");
+            const id = prompt("Teacher ID (e.g. T101):");
             const name = prompt("Teacher Name:");
             const subject = prompt("Subject Assigned (e.g. Mathematics, Science):");
             const cls = prompt("Assign Classes (comma separated, e.g. X-A, IX-B):");
