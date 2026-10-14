@@ -118,17 +118,7 @@
         };
         
         let dbRef = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_public_school_tonk_master_db");
-        } catch(e) { console.log("Firebase Init Error:", e); }
-
-        let activeRole = 'principal';
-        let loggedInUser = 'principal';
-        let selectedChatStudent = '';
-        let selectedChatSubject = '';
-        let selectedClassView = '';
-        let selectedTeacherActiveClass = '';
+        let globalDB = null;
 
         const defaultData = {
             currentSession: '2026-2027',
@@ -145,9 +135,31 @@
             teachers: []
         };
 
-        function getDB() {
-            const data = localStorage.getItem('sophia_school_db');
-            let db = data ? JSON.parse(data) : defaultData;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref("sophia_public_school_tonk_master_db");
+            
+            // Realtime listener to keep globalDB updated instantly across all devices
+            dbRef.on('value', (snap) => {
+                const val = snap.val();
+                if(val) {
+                    globalDB = sanitizeDB(val);
+                } else {
+                    globalDB = defaultData;
+                    dbRef.set(defaultData);
+                }
+                
+                if(!document.getElementById('main-dashboard').classList.contains('hidden')) {
+                    const currentMod = document.querySelector('#nav-links button.bg-slate-800')?.dataset?.id || 'fees';
+                    loadModule(currentMod);
+                }
+            });
+        } catch(e) { 
+            console.log("Firebase Init Error:", e);
+            globalDB = defaultData;
+        }
+
+        function sanitizeDB(db) {
             if(!db.currentSession) db.currentSession = '2026-2027';
             if(!db.sessionsData) db.sessionsData = defaultData.sessionsData;
             if(!db.teachers) db.teachers = defaultData.teachers;
@@ -173,31 +185,29 @@
                     if(!s.examResults) s.examResults = { halfYearly: 'Not Published', yearly: 'Not Published' };
                 });
             });
-
             return db;
         }
 
+        function getDB() {
+            if(!globalDB) {
+                globalDB = defaultData;
+            }
+            return sanitizeDB(globalDB);
+        }
+
         function saveDB(data) {
-            localStorage.setItem('sophia_school_db', JSON.stringify(data));
+            globalDB = sanitizeDB(data);
             if(dbRef) {
-                dbRef.set(data).catch(err => console.log("Cloud Sync Failed:", err));
+                dbRef.set(globalDB).catch(err => console.log("Cloud Sync Failed:", err));
             }
         }
 
-        if(dbRef) {
-            dbRef.on('value', (snap) => {
-                const val = snap.val();
-                if(val) {
-                    localStorage.setItem('sophia_school_db', JSON.stringify(val));
-                    if(!document.getElementById('main-dashboard').classList.contains('hidden')) {
-                        const currentMod = document.querySelector('#nav-links button.bg-slate-800')?.dataset?.id || 'fees';
-                        loadModule(currentMod);
-                    }
-                } else {
-                    dbRef.set(defaultData);
-                }
-            });
-        }
+        let activeRole = 'principal';
+        let loggedInUser = 'principal';
+        let selectedChatStudent = '';
+        let selectedChatSubject = '';
+        let selectedClassView = '';
+        let selectedTeacherActiveClass = '';
 
         function selectRole(role) {
             activeRole = role;
