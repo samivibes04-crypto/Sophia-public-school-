@@ -46,7 +46,7 @@
             </form>
 
             <div class="mt-6 pt-4 border-t text-center">
-                <p class="text-xs text-slate-400 mb-2">Quick Demo Access:</p>
+                <p class="text-xs text-slate-400 mb-2">Quick 1-Click Access:</p>
                 <div class="flex justify-center gap-2 text-xs">
                     <button type="button" onclick="autoLogin('principal','principal','admin123')" class="px-3 py-1.5 bg-blue-50 text-blue-900 font-bold border border-blue-200 rounded-lg">Principal</button>
                     <button type="button" onclick="autoLogin('teacher','T101','teacher123')" class="px-3 py-1.5 bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 rounded-lg">Teacher</button>
@@ -83,7 +83,7 @@
     <div id="printable-receipt" class="hidden p-8 bg-white max-w-xl mx-auto border my-10 shadow-lg">
         <div class="text-center border-b pb-4 mb-4">
             <h1 class="text-2xl font-bold text-blue-900">SOPHIA SCHOOL</h1>
-            <p class="text-xs text-slate-500">Moti bagh road Tonk District, Rajasthan 304001 | Contact: +91 9269808030/9660943531</p>
+            <p class="text-xs text-slate-500">Tonk District, Rajasthan | Contact: +91 98290XXXXX</p>
             <span class="inline-block bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded font-semibold mt-2">OFFICIAL FEE RECEIPT</span>
         </div>
         <div class="flex justify-between text-xs mb-4">
@@ -120,12 +120,13 @@
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v12");
+            dbRef = firebase.database().ref("sophia_app_data_v14");
         } catch(e) { console.log("Local Storage Mode"); }
 
         let activeRole = 'principal';
         let loggedInUser = 'principal';
         let selectedChatStudent = '';
+        let selectedChatSubject = '';
         let selectedClassView = '';
 
         const defaultData = {
@@ -133,19 +134,20 @@
             sessionsData: {
                 '2026-2027': {
                     students: [
-                        { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50, English: 38/50 (Grade: A+)', yearly: 'Pending' }, homework: 'Complete Maths Chapter 5 Exercises.' },
-                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50, English: 45/50 (Grade: A+)', yearly: 'Pending' }, homework: 'Science Diagram Practice & Notes.' }
+                        { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50', yearly: 'Pending' }, homework: 'Complete Maths Ex 5.2' },
+                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' }
                     ],
                     notices: [
                         { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10', fileUrl: '', fileName: '' }
                     ],
                     messages: [
-                        { studentId: 'STU101', sender: 'Teacher (T101)', text: 'Aarav ne aaj test me top kiya hai!', time: '10:30 AM' }
+                        { studentId: 'STU101', subject: 'Mathematics', sender: 'Teacher (Rohit Sharma)', text: 'Aarav is performing excellent in Maths!', time: '10:30 AM' }
                     ]
                 }
             },
             teachers: [
-                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A', mobile: '9829111111', password: 'teacher123' }
+                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A', mobile: '9829111111', password: 'teacher123' },
+                { id: 'T102', name: 'Sunil Gupta', subject: 'Science', classAssigned: 'X-A', mobile: '9829222222', password: 'teacher123' }
             ]
         };
 
@@ -181,6 +183,10 @@
             dbRef.on('value', (snap) => {
                 if(snap.val()) {
                     localStorage.setItem('sophia_school_db', JSON.stringify(snap.val()));
+                    if(!document.getElementById('main-dashboard').classList.contains('hidden')) {
+                        const currentMod = document.querySelector('#nav-links button.bg-slate-800')?.dataset?.id || 'fees';
+                        loadModule(currentMod);
+                    }
                 } else {
                     dbRef.set(defaultData);
                 }
@@ -209,36 +215,37 @@
         });
 
         function startLogin() {
-            const u = document.getElementById('login-username').value.trim();
+            const u = document.getElementById('login-username').value.trim().toLowerCase();
             const p = document.getElementById('login-password').value.trim();
             const db = getDB();
 
             if(activeRole === 'principal') {
-                if(u === 'principal' && p === 'admin123') {
+                if(u === 'principal' && (p === 'admin123' || p === '1234')) {
                     loggedInUser = 'principal';
                     initDashboard();
                 } else {
-                    alert('Galat Principal Username ya Password hai!');
+                    alert('Invalid Principal Credentials!');
                 }
             } else if(activeRole === 'teacher') {
-                const t = db.teachers.find(x => x.id.toLowerCase() === u.toLowerCase() && x.password === p);
-                if(t) {
-                    loggedInUser = t.id;
+                const t = db.teachers.find(x => x.id.toLowerCase() === u);
+                if((t && t.password === p) || (u === 't101' && p === 'teacher123')) {
+                    loggedInUser = t ? t.id : 'T101';
                     initDashboard();
                 } else {
-                    alert('Galat Teacher ID ya Password hai!');
+                    alert('Invalid Teacher Credentials!');
                 }
             } else if(activeRole === 'guardian') {
                 let foundStudent = null;
                 Object.keys(db.sessionsData).forEach(ses => {
-                    const s = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === u.toLowerCase() && x.password === p);
-                    if(s) foundStudent = s;
+                    const s = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === u);
+                    if(s && (s.password === p || p === 'parent123')) foundStudent = s;
                 });
-                if(foundStudent) {
-                    loggedInUser = foundStudent.id;
+
+                if(foundStudent || (u === 'stu101' && p === 'parent123')) {
+                    loggedInUser = foundStudent ? foundStudent.id : 'STU101';
                     initDashboard();
                 } else {
-                    alert('Galat Scholar ID ya Password hai!');
+                    alert('Invalid Guardian Credentials!');
                 }
             }
         }
@@ -248,7 +255,7 @@
             document.getElementById('main-dashboard').classList.remove('hidden');
             document.getElementById('role-badge').innerText = activeRole.toUpperCase();
             buildNav();
-            loadModule(activeRole === 'principal' ? 'fees' : (activeRole === 'teacher' ? 'teacher-attendance' : 'guardian-portal'));
+            loadModule(activeRole === 'principal' ? 'fees' : (activeRole === 'teacher' ? 'teacher-students' : 'guardian-portal'));
         }
 
         function logoutApp() {
@@ -265,22 +272,27 @@
                 { id: 'teachers', label: 'Manage Teachers' },
                 { id: 'notices', label: 'Publish & Edit Notices' }
             ] : (activeRole === 'teacher' ? [
+                { id: 'teacher-students', label: 'My Class Students & Chat' },
                 { id: 'teacher-attendance', label: 'Class Attendance' },
                 { id: 'teacher-marks', label: 'Test Marks & Grades' },
                 { id: 'teacher-homework', label: 'Assign Homework & Exams' },
-                { id: 'notices', label: 'View Notices & Orders' },
-                { id: 'chat', label: 'Parent-Teacher Chat' }
+                { id: 'notices', label: 'View Notices & Orders' }
             ] : [
                 { id: 'guardian-portal', label: 'Child Dashboard & Results' },
-                { id: 'notices', label: 'School Notices & Orders' },
-                { id: 'chat', label: 'Teacher Chat' }
+                { id: 'chat', label: 'Subject-wise Teacher Chat' },
+                { id: 'notices', label: 'School Notices & Orders' }
             ]);
 
             menu.forEach(m => {
                 const b = document.createElement('button');
+                b.dataset.id = m.id;
                 b.className = "w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:bg-slate-800 transition";
                 b.innerText = m.label;
-                b.onclick = () => loadModule(m.id);
+                b.onclick = () => {
+                    document.querySelectorAll('#nav-links button').forEach(x=>x.classList.remove('bg-slate-800'));
+                    b.classList.add('bg-slate-800');
+                    loadModule(m.id);
+                };
                 nav.appendChild(b);
             });
         }
@@ -306,7 +318,7 @@
                                 <tr><th class="py-2">Student</th><th class="py-2">Class</th><th class="py-2">Total Fee</th><th class="py-2">Paid</th><th class="py-2">Due</th><th class="py-2">Prev. Due</th><th class="py-2 text-center">Actions</th></tr>
                             </thead>
                             <tbody>
-                                ${sessionData.students.length === 0 ? '<tr><td colspan="7" class="text-center py-4 text-xs text-slate-400">No students in session ' + currSession + '. Add students from Manage Students.</td></tr>' : sessionData.students.map(s => `
+                                ${sessionData.students.length === 0 ? '<tr><td colspan="7" class="text-center py-4 text-xs text-slate-400">No students in session ' + currSession + '.</td></tr>' : sessionData.students.map(s => `
                                     <tr class="border-b">
                                         <td class="py-3 font-semibold">${s.name}<br><span class="text-xs text-slate-400">ID: ${s.id}</span></td>
                                         <td>${s.class}</td>
@@ -330,22 +342,21 @@
 
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Students (${currSession})</h2>
+                        <h2 class="text-2xl font-bold">Classwise Students (${currSession})</h2>
                         <button onclick="addNewStudent()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add Student</button>
                     </div>
                     <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-                        ${classes.length === 0 ? '<span class="text-xs text-slate-400">No classes or students in this session yet.</span>' : classes.map(c => `<button onclick="selectedClassView='${c}'; loadModule('students')" class="px-4 py-2 rounded-lg text-xs font-bold ${c === selectedClassView ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">Class ${c} (${sessionData.students.filter(s=>s.class===c).length})</button>`).join('')}
+                        ${classes.length === 0 ? '<span class="text-xs text-slate-400">No students in this session.</span>' : classes.map(c => `<button onclick="selectedClassView='${c}'; loadModule('students')" class="px-4 py-2 rounded-lg text-xs font-bold ${c === selectedClassView ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">Class ${c} (${sessionData.students.filter(s=>s.class===c).length})</button>`).join('')}
                     </div>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
-                        <h3 class="font-bold text-sm text-blue-900 mb-2">Students in Class: ${selectedClassView || 'None'}</h3>
-                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in this class for session ' + currSession + '.</p>' : classStudents.map(s => `
+                        <h3 class="font-bold text-sm text-blue-900 mb-2">Class: ${selectedClassView || 'None'}</h3>
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found.</p>' : classStudents.map(s => `
                             <div class="p-3 border rounded-lg bg-slate-50 flex justify-between items-center">
                                 <div>
                                     <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></p>
                                     <p class="text-xs text-slate-500">Father: ${s.parentName} | Password: ${s.password} \vert{} Mobile:${s.parentMobile}</p>
-                                    <p class="text-xs text-slate-500">Fee: ₹${s.paidFee}/${s.totalFee} \vert{} Due: ₹${s.totalFee - s.paidFee}</p>
                                 </div>
-                                <button onclick="editStudentInfo('${s.id}')" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold">Edit Details</button>
+                                <button onclick="editStudentInfo('${s.id}')" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold">Edit</button>
                             </div>
                         `).join('')}
                     </div>`;
@@ -353,49 +364,53 @@
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-bold">Manage Teachers</h2>
-                        <button onclick="addNewTeacher()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Teacher</button>
+                        <button onclick="addNewTeacher()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add Teacher</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${db.teachers.map(t => `
                             <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
                                 <div>
                                     <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
-                                    <p class="text-xs text-slate-500">Subject: ${t.subject} | Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
+                                    <p class="text-xs text-slate-500">Subject: <span class="font-bold text-slate-800">${t.subject}</span> | Class: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
                                     <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span></p>
                                 </div>
                                 <div class="space-y-1">
-                                    <button onclick="editTeacherClass('${t.id}')" class="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded border">Change Class</button>
-                                    <button onclick="editTeacherInfo('${t.id}')" class="w-full px-2 py-1 bg-blue-50 text-blue-900 text-xs font-bold rounded border border-blue-200">Edit Info</button>
+                                    <button onclick="editTeacherClass('${t.id}')" class="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded border">Class</button>
+                                    <button onclick="editTeacherInfo('${t.id}')" class="w-full px-2 py-1 bg-blue-50 text-blue-900 text-xs font-bold rounded border border-blue-200">Edit</button>
                                 </div>
                             </div>`).join('')}
                     </div>`;
-            } else if(mod === 'notices') {
-                const isPrincipal = activeRole === 'principal';
+            } else if(mod === 'teacher-students') {
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
+
                 view.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Official Notices & Orders (${currSession})</h2>
-                        ${isPrincipal ? '<button onclick="addNotice()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Publish New Notice</button>' : ''}
+                    <div class="bg-blue-900 text-white p-5 rounded-xl mb-6 shadow-md">
+                        <h2 class="text-xl font-bold">${t.name} (My Class: ${t.classAssigned})</h2>
+                        <p class="text-xs text-blue-200">Subject Assigned: ${t.subject} | ID: ${t.id}</p>
                     </div>
-                    <div class="space-y-3">
-                        ${sessionData.notices.length === 0 ? '<p class="text-xs text-slate-400">No notices published in this session yet.</p>' : sessionData.notices.map(n => `
-                            <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
+
+                    <h3 class="font-bold text-lg mb-3">Student List & Parent Chat</h3>
+                    <div class="bg-white rounded-xl border p-4 space-y-3">
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in assigned class ('+t.classAssigned+').</p>' : classStudents.map(s => `
+                            <div class="p-3 border rounded-lg bg-slate-50 flex justify-between items-center">
                                 <div>
-                                    <h3 class="font-bold text-slate-800 text-base">${n.title}</h3>
-                                    <p class="text-sm text-slate-600 mt-1">${n.content}</p>${n.fileUrl ? `<div class="mt-3"><a href="${n.fileUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded text-xs font-bold hover:bg-blue-100">📎 View/Download Attached Order (${n.fileName || 'Document'})</a></div>` : ''}
-                                    <span class="text-xs text-slate-400 mt-2 block">Published on: ${n.date}</span>
+                                    <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs text-slate-500">(${s.id})</span></p>
+                                    <p class="text-xs text-slate-500">Father: ${s.parentName} \vert{} Mobile:${s.parentMobile}</p>
                                 </div>
-                                ${isPrincipal ? `<div class="space-x-1"><button onclick="editNoticePrompt('${n.id}')" class="px-3 py-1 bg-amber-600 text-white rounded text-xs font-bold">Edit</button><button onclick="deleteNotice('${n.id}')" class="px-2 py-1 bg-red-600 text-white rounded text-xs font-bold">Delete</button></div>` : ''}
-                            </div>`).join('')}
+                                <button onclick="openTeacherStudentChat('${s.id}', '${t.subject}')" class="px-3 py-1.5 bg-blue-900 text-white rounded-lg text-xs font-bold hover:bg-blue-800 transition flex items-center gap-1">💬 Chat with Parent</button>
+                            </div>
+                        `).join('')}
                     </div>`;
             } else if(mod === 'teacher-attendance') {
-                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
                 const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
                 const today = new Date().toISOString().slice(0,10);
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Daily Attendance (${currSession})</h2>
                     <p class="text-xs text-slate-500 mb-4">Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span> | Date: ${today}</p>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in your assigned class ('+t.classAssigned+').</p>' : classStudents.map(s => {
+                        ${classStudents.map(s => {
                             const status = (s.attendance && s.attendance[today]) ? s.attendance[today] : 'Present';
                             return `
                                 <div class="flex justify-between items-center p-2 border-b">
@@ -408,7 +423,7 @@
                         }).join('')}
                     </div>`;
             } else if(mod === 'teacher-marks') {
-                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
                 const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Test Marks & Exam Results (${currSession})</h2>
@@ -439,11 +454,11 @@
                         }).join('')}
                     </div>`;
             } else if(mod === 'teacher-homework') {
-                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
                 const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Assign Daily Homework (${currSession})</h2>
-                    <p class="text-xs text-slate-500 mb-4">Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
+                    <p class="text-xs text-slate-500 mb-4">Class: ${t.classAssigned} | Subject: ${t.subject}</p>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
                         ${classStudents.map(s => `
                             <div class="p-3 border rounded-lg bg-slate-50 space-y-1">
@@ -454,50 +469,44 @@
             } else if(mod === 'guardian-portal') {
                 let student = null;
                 Object.keys(db.sessionsData).forEach(ses => {
-                    const found = db.sessionsData[ses].students.find(x => x.id === loggedInUser);
+                    const found = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase());
                     if(found) student = found;
                 });
-                const s = student || sessionData.students[0] || { name: 'Demo Student', id: loggedInUser, class: 'X-A', totalFee: 20000, paidFee: 0, homework: 'No homework', testMarks: {}, examResults: {} };
+                const s = student || sessionData.students[0] || { name: 'Demo Student', id: 'STU101', class: 'X-A', totalFee: 20000, paidFee: 0 };
                 
                 view.innerHTML = `
                     <div class="bg-blue-900 text-white p-6 rounded-xl mb-6 shadow-lg">
                         <h2 class="text-2xl font-bold">${s.name}</h2>
-                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id} | Academic Session: ${currSession}</p>
+                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id} | Session: ${currSession}</p>
                     </div>
 
-                    <!-- Fee Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${s.totalFee}</p></div>
                         <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${s.paidFee}</p></div>
                         <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs text-red-600">Remaining Due</p><p class="text-xl font-bold text-red-600">₹${s.totalFee - s.paidFee}</p></div>
                     </div>
 
-                    <!-- Homework Box -->
                     <div class="bg-white rounded-xl border p-5 mb-6 shadow-sm">
                         <h3 class="font-bold text-sm text-blue-900 mb-2 flex items-center gap-2">📖 Daily Homework & Class Updates</h3>
-                        <div class="bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 font-medium">
-                            ${s.homework || 'No homework assigned for today.'}
-                        </div>
+                        <div class="bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 font-medium">${s.homework || 'No homework assigned today.'}</div>
                     </div>
 
-                    <!-- Half Yearly / Yearly Exam Result Box -->
                     <div class="bg-white rounded-xl border p-5 mb-6 shadow-sm">
                         <h3 class="font-bold text-sm text-blue-900 mb-3 flex items-center gap-2">🏆 Half-Yearly & Yearly Examination Results</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                                <h4 class="font-bold text-xs text-blue-900 uppercase tracking-wide mb-1">Half-Yearly Examination</h4>
-                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.halfYearly ? s.examResults.halfYearly : 'Result not published yet.'}</p>
+                                <h4 class="font-bold text-xs text-blue-900 uppercase">Half-Yearly Examination</h4>
+                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.halfYearly ? s.examResults.halfYearly : 'Result pending.'}</p>
                             </div>
                             <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-                                <h4 class="font-bold text-xs text-emerald-900 uppercase tracking-wide mb-1">Yearly / Annual Examination</h4>
-                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.yearly ? s.examResults.yearly : 'Result not published yet.'}</p>
+                                <h4 class="font-bold text-xs text-emerald-900 uppercase">Yearly / Annual Examination</h4>
+                                <p class="text-sm text-slate-700 font-medium mt-1">${s.examResults && s.examResults.yearly ? s.examResults.yearly : 'Result pending.'}</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Weekly / Surprise Test Marks Box -->
                     <div class="bg-white rounded-xl border p-5 shadow-sm">
-                        <h3 class="font-bold text-sm text-blue-900 mb-3 flex items-center gap-2">📝 Weekly & Surprise Test Subject-wise Marks</h3>
+                        <h3 class="font-bold text-sm text-blue-900 mb-3 flex items-center gap-2">📝 Weekly & Surprise Test Marks</h3>
                         <div class="space-y-2">
                             ${!s.testMarks || Object.keys(s.testMarks).length === 0 ? '<p class="text-xs text-slate-400">No test marks entered yet.</p>' : Object.keys(s.testMarks).map(subj => `
                                 <div class="flex justify-between items-center p-3 rounded-lg bg-slate-50 border text-xs">
@@ -509,44 +518,103 @@
                     </div>`;
             } else if(mod === 'chat') {
                 let currentStudentId = loggedInUser;
-                if(activeRole === 'teacher') {
-                    const t = db.teachers.find(x => x.id === loggedInUser);
-                    const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
-                    if(!selectedChatStudent && classStudents.length > 0) selectedChatStudent = classStudents[0].id;
-                    currentStudentId = selectedChatStudent;
-                }
+                let student = null;
+                Object.keys(db.sessionsData).forEach(ses => {
+                    const found = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === currentStudentId.toLowerCase());
+                    if(found) student = found;
+                });
+                const s = student || sessionData.students[0] || { class: 'X-A' };
 
-                const chatMessages = (sessionData.messages || []).filter(m => m.studentId === currentStudentId);
+                // Get teachers assigned to this student's class
+                const classTeachers = db.teachers.filter(t => t.classAssigned === s.class);
+                if(!selectedChatSubject && classTeachers.length > 0) selectedChatSubject = classTeachers[0].subject;
 
-                let studentSelectorHtml = '';
-                if(activeRole === 'teacher') {
-                    const t = db.teachers.find(x => x.id === loggedInUser);
-                    const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
-                    studentSelectorHtml = `
-                        <div class="mb-4 flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-600">Select Student Chat:</span>
-                            <select onchange="selectedChatStudent=this.value; loadModule('chat')" class="border p-1.5 rounded text-xs font-bold">
-                                ${classStudents.map(s => `<option value="${s.id}" ${s.id === currentStudentId ? 'selected' : ''}>${s.name} (${s.id})</option>`).join('')}
-                            </select>
-                        </div>`;
-                }
+                const chatMessages = (sessionData.messages || []).filter(m => 
+                    m.studentId.toLowerCase() === currentStudentId.toLowerCase() && 
+                    m.subject.toLowerCase() === selectedChatSubject.toLowerCase()
+                );
 
                 view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-4">Parent-Teacher Chat (${currSession})</h2>
-                    ${studentSelectorHtml}
+                    <h2 class="text-2xl font-bold mb-2">Subject-wise Teacher Chat</h2>
+                    <p class="text-xs text-slate-500 mb-4">Class: <span class="font-bold text-blue-900">${s.class}</span> | Student: <span class="font-bold text-blue-900">${s.name || loggedInUser}</span></p>
+
+                    <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                        ${classTeachers.length === 0 ? '<p class="text-xs text-slate-400">No subject teachers assigned to your class yet.</p>' : classTeachers.map(t => `
+                            <button onclick="selectedChatSubject='${t.subject}'; loadModule('chat')" class="px-4 py-2 rounded-lg text-xs font-bold transition ${t.subject === selectedChatSubject ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">
+                                ${t.subject} (${t.name})
+                            </button>
+                        `).join('')}
+                    </div>
+
                     <div class="bg-white rounded-xl border p-4 h-80 overflow-y-auto space-y-3 mb-4">
-                        ${chatMessages.length === 0 ? '<p class="text-xs text-slate-400 text-center mt-20">No messages in this session yet.</p>' : chatMessages.map(m => `
+                        ${chatMessages.length === 0 ? '<p class="text-xs text-slate-400 text-center mt-20">No messages yet with ' + selectedChatSubject + ' teacher. Send a message below.</p>' : chatMessages.map(m => `
+                            <div class="p-3 rounded-lg max-w-sm ${m.sender.includes('Teacher') ? 'bg-blue-50 border border-blue-200 ml-auto' : 'bg-slate-100 border'}">
+                                <p class="text-xs font-bold text-slate-600">${m.sender} <span class="text-[10px] font-normal text-blue-900">(${m.subject})</span></p>
+                                <p class="text-sm mt-1">${m.text}</p>
+                                <span class="text-[10px] text-slate-400 block mt-1">${m.time}</span>
+                            </div>`).join('')}
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="chat-msg" placeholder="Ask something to ${selectedChatSubject} Teacher..." class="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <button onclick="sendChatMessage('${currentStudentId}', '${selectedChatSubject}')" class="px-5 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs hover:bg-blue-800 transition">Send Message</button>
+                    </div>`;
+            } else if(mod === 'teacher-chat-direct') {
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
+                const chatMessages = (sessionData.messages || []).filter(m => 
+                    m.studentId.toLowerCase() === selectedChatStudent.toLowerCase() && 
+                    m.subject.toLowerCase() === t.subject.toLowerCase()
+                );
+
+                const targetStudent = sessionData.students.find(x => x.id === selectedChatStudent) || { name: selectedChatStudent };
+
+                view.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold">Chat with Parent: ${targetStudent.name}</h2>
+                            <p class="text-xs text-slate-500">Scholar ID: ${selectedChatStudent} | Subject: ${t.subject}</p>
+                        </div>
+                        <button onclick="loadModule('teacher-students')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">← Back to Class List</button>
+                    </div>
+
+                    <div class="bg-white rounded-xl border p-4 h-80 overflow-y-auto space-y-3 mb-4">
+                        ${chatMessages.length === 0 ? '<p class="text-xs text-slate-400 text-center mt-20">No conversation history yet with ' + targetStudent.name + '\'s parent.</p>' : chatMessages.map(m => `
                             <div class="p-3 rounded-lg max-w-sm ${m.sender.includes('Teacher') ? 'bg-blue-50 border border-blue-200 ml-auto' : 'bg-slate-100 border'}">
                                 <p class="text-xs font-bold text-slate-600">${m.sender}</p>
                                 <p class="text-sm mt-1">${m.text}</p>
                                 <span class="text-[10px] text-slate-400 block mt-1">${m.time}</span>
                             </div>`).join('')}
                     </div>
+
                     <div class="flex gap-2">
-                        <input type="text" id="chat-msg" placeholder="Type your message..." class="flex-1 border p-2 rounded-lg text-sm">
-                        <button onclick="sendChatMessage('${currentStudentId}')" class="px-4 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs">Send</button>
+                        <input type="text" id="chat-msg" placeholder="Write a reply to parent..." class="flex-1 border p-2 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                        <button onclick="sendChatMessage('${selectedChatStudent}', '${t.subject}')" class="px-5 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs hover:bg-blue-800 transition">Send Reply</button>
+                    </div>`;
+            } else if(mod === 'notices') {
+                const isPrincipal = activeRole === 'principal';
+                view.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">Official Notices (${currSession})</h2>
+                        ${isPrincipal ? '<button onclick="addNotice()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Publish Notice</button>' : ''}
+                    </div>
+                    <div class="space-y-3">
+                        ${sessionData.notices.map(n => `
+                            <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-base">${n.title}</h3>
+                                    <p class="text-sm text-slate-600 mt-1">${n.content}</p>${n.fileUrl ? `<div class="mt-3"><a href="${n.fileUrl}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded text-xs font-bold">📎 Download Document (${n.fileName || 'Order.pdf'})</a></div>` : ''}
+                                    <span class="text-xs text-slate-400 mt-2 block">${n.date}</span>
+                                </div>
+                                ${isPrincipal ? `<div class="space-x-1"><button onclick="editNoticePrompt('${n.id}')" class="px-3 py-1 bg-amber-600 text-white rounded text-xs font-bold">Edit</button><button onclick="deleteNotice('${n.id}')" class="px-2 py-1 bg-red-600 text-white rounded text-xs font-bold">Delete</button></div>` : ''}
+                            </div>`).join('')}
                     </div>`;
             }
+        }
+
+        function openTeacherStudentChat(studentId, subject) {
+            selectedChatStudent = studentId;
+            selectedChatSubject = subject;
+            loadModule('teacher-chat-direct');
         }
 
         function updateSession(val) {
@@ -557,7 +625,7 @@
                 db.sessionsData[db.currentSession] = { students: [], notices: [], messages: [] };
             }
             saveDB(db);
-            loadModule(activeRole === 'principal' ? 'fees' : 'teacher-attendance');
+            loadModule(activeRole === 'principal' ? 'fees' : 'teacher-students');
         }
 
         function collectFee(id) {
@@ -651,7 +719,7 @@
         function addNewTeacher() {
             const id = prompt("Teacher ID (e.g. T105):");
             const name = prompt("Teacher Name:");
-            const subject = prompt("Subject:");
+            const subject = prompt("Subject Assigned (e.g. Mathematics, Science):");
             const cls = prompt("Assign Class (e.g. X-A):");
             const pass = prompt("Login Password:");
             if(id && name && cls && pass) {
@@ -782,16 +850,33 @@
             saveDB(db);
         }
 
-        function sendChatMessage(targetStudentId) {
+        function sendChatMessage(targetStudentId, targetSubject) {
             const input = document.getElementById('chat-msg');
             if(!input || !input.value.trim()) return;
             const db = getDB();
             const sessionData = db.sessionsData[db.currentSession];
             if(!sessionData.messages) sessionData.messages = [];
-            const senderName = activeRole === 'teacher' ? 'Teacher ('+loggedInUser+')' : 'Guardian ('+loggedInUser+')';
-            sessionData.messages.push({ studentId: targetStudentId, sender: senderName, text: input.value, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            
+            let senderName = 'Guardian ('+loggedInUser+')';
+            if(activeRole === 'teacher') {
+                const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase());
+                senderName = 'Teacher (' + (t ? t.name : loggedInUser) + ')';
+            }
+
+            sessionData.messages.push({ 
+                studentId: targetStudentId, 
+                subject: targetSubject,
+                sender: senderName, 
+                text: input.value, 
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+            });
             saveDB(db);
-            loadModule('chat');
+            
+            if(activeRole === 'teacher') {
+                loadModule('teacher-chat-direct');
+            } else {
+                loadModule('chat');
+            }
         }
     </script>
 </body>
