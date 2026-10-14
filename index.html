@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sophia School - Complete Management System</title>
+    <!-- Web App Manifest for PWA / Mobile App Installation -->
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlNvcGhpYSBTY2hvb2wiLAogICJzaG9ydF9uYW1lIjogIlNvcGhpYSBBcHAiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxZTNhOGEiLAogICJ0aGVtZV9jb2xvciI6ICIxZTNhOGEiLAogICJpY29ucyI6IFsgewogICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcudGFscGhhd2FyZS5jb201MTI3NTI5NSIsCiAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgfSBdCn0=">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDKs for Realtime Cloud Sync -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen">
+
+    <!-- Live Cloud Sync Indicator -->
+    <div id="sync-bar" class="bg-emerald-600 text-white text-[11px] font-medium py-1 px-4 text-center flex items-center justify-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+        <span id="sync-status-text">Cloud Real-Time Sync Active (सभी डिवाइसेज लाइव कनेक्टेड हैं)</span>
+    </div>
+
+    <!-- PWA Installation Banner -->
+    <div id="pwa-install-banner" class="hidden fixed bottom-4 left-4 right-4 bg-blue-900 text-white p-4 rounded-xl shadow-2xl z-50 flex items-center justify-between border border-blue-700">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1">
+                <svg viewBox="0 0 200 200" class="w-full h-full">
+                    <circle cx="100" cy="100" r="95" fill="#ffffff"/>
+                    <path d="M 50 125 Q 100 115 100 135 Q 100 115 150 125 L 145 145 Q 100 135 100 150 Q 100 135 55 145 Z" fill="#1e3a8a"/>
+                    <path d="M 96 130 L 96 85 Q 90 70 80 60 Q 100 65 100 85 Q 100 65 120 60 Q 110 70 104 85 L 104 130 Z" fill="#1e3a8a"/>
+                    <path d="M 100 50 Q 108 65 100 75 Q 92 65 100 50 Z" fill="#f59e0b"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold text-sm">Sophia School App</p>
+                <p class="text-xs text-blue-200">Mobile me App install karein</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="dismissInstallBanner()" class="px-3 py-1 text-xs text-blue-200">Later</button>
+            <button onclick="installPWA()" class="px-3 py-1 bg-amber-500 text-slate-900 font-bold rounded-lg text-xs">Install App</button>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
+            <div class="text-center mb-8">
+                <svg class="w-24 h-24 mx-auto mb-3" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="95" fill="#ffffff" stroke="#1e3a8a" stroke-width="6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="#b45309" stroke-width="3"/>
+                    <path d="M 100 12 C 145 12 180 40 180 100 C 180 160 145 188 100 188 C 55 188 20 160 20 100 C 20 40 55 12 100 12 Z" fill="none" stroke="#1e3a8a" stroke-width="4"/>
+                    <path d="M 25 105 C 50 175 150 175 175 105 C 160 180 40 180 25 105 Z" fill="#1e3a8a"/>
+                    <path id="motto-path" d="M 35 130 Q 100 180 165 130" fill="none"/>
+                    <text font-size="9" fill="#ffffff" font-weight="bold" letter-spacing="1">
+                        <textPath href="#motto-path" startOffset="50%" text-anchor="middle">WISDOM • INTEGRITY • LEADERSHIP</textPath>
+                    </text>
+                    <g transform="translate(0, -5)">
+                        <path d="M 50 125 Q 100 115 100 135 Q 100 115 150 125 L 145 145 Q 100 135 100 150 Q 100 135 55 145 Z" fill="#93c5fd" stroke="#1e3a8a" stroke-width="2"/>
+                        <path d="M 96 130 L 96 85 Q 90 70 80 60 Q 100 65 100 85 Q 100 65 120 60 Q 110 70 104 85 L 104 130 Z" fill="#1e3a8a"/>
+                        <path d="M 100 50 Q 108 65 100 75 Q 92 65 100 50 Z" fill="#f59e0b"/>
+                        <circle cx="75" cy="70" r="6" fill="#1e3a8a"/><circle cx="65" cy="85" r="5" fill="#1e3a8a"/><circle cx="85" cy="80" r="5" fill="#1e3a8a"/>
+                        <circle cx="125" cy="70" r="6" fill="#1e3a8a"/><circle cx="135" cy="85" r="5" fill="#1e3a8a"/><circle cx="115" cy="80" r="5" fill="#1e3a8a"/>
+                    </g>
+                    <path id="school-name-path" d="M 30 90 A 70 70 0 0 1 170 90" fill="none"/>
+                    <text font-size="14" font-weight="bold" fill="#1e3a8a" letter-spacing="2">
+                        <textPath href="#school-name-path" startOffset="50%" text-anchor="middle" id="login-app-title">SOPHIA SCHOOL</textPath>
+                    </text>
+                    <text x="100" y="118" font-size="8" font-weight="bold" fill="#b45309" text-anchor="middle">EST. 1978</text>
+                </svg>
+                <h1 class="text-2xl font-bold text-slate-800" id="login-school-name">SOPHIA SCHOOL</h1>
+                <p class="text-sm text-slate-500" id="login-school-sub">Tonk, Rajasthan | Management Portal</p>
+            </div>
+
+            <!-- Role Selector -->
+            <div class="flex rounded-lg bg-slate-100 p-1 mb-6">
+                <button onclick="setRole('principal')" id="btn-role-principal" class="flex-1 py-2 text-xs font-semibold rounded-md bg-white text-blue-900 shadow">Principal</button>
+                <button onclick="setRole('teacher')" id="btn-role-teacher" class="flex-1 py-2 text-xs font-semibold rounded-md text-slate-600">Teacher</button>
+                <button onclick="setRole('guardian')" id="btn-role-guardian" class="flex-1 py-2 text-xs font-semibold rounded-md text-slate-600">Guardian</button>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1" id="lbl-username">Username</label>
+                    <input type="text" id="login-username" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Enter username">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800 transition shadow">Login</button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t text-center">
+                <p class="text-xs text-slate-400 mb-2">Quick Demo Access:</p>
+                <div class="flex justify-center gap-2 text-xs">
+                    <button onclick="quickLogin('principal','principal','admin123')" class="px-2 py-1 bg-slate-100 rounded">Principal</button>
+                    <button onclick="quickLogin('teacher','T101','teacher123')" class="px-2 py-1 bg-slate-100 rounded">Teacher</button>
+                    <button onclick="quickLogin('guardian','STU101','parent123')" class="px-2 py-1 bg-slate-100 rounded">Guardian</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP DASHBOARD -->
+    <div id="main-app" class="hidden min-h-screen flex flex-col md:flex-row">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0">
+            <div class="p-4 flex items-center gap-3 border-b border-slate-800">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <circle cx="100" cy="100" r="95" fill="#ffffff"/>
+                        <path d="M 50 125 Q 100 115 100 135 Q 100 115 150 125 L 145 145 Q 100 135 100 150 Q 100 135 55 145 Z" fill="#1e3a8a"/>
+                        <path d="M 96 130 L 96 85 Q 90 70 80 60 Q 100 65 100 85 Q 100 65 120 60 Q 110 70 104 85 L 104 130 Z" fill="#1e3a8a"/>
+                        <path d="M 100 50 Q 108 65 100 75 Q 92 65 100 50 Z" fill="#f59e0b"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-bold text-sm leading-tight" id="sidebar-school-title">SOPHIA SCHOOL</h2>
+                    <span id="user-badge" class="text-xs bg-blue-800 px-2 py-0.5 rounded text-blue-200">Principal</span>
+                </div>
+            </div>
+
+            <nav class="p-4 space-y-1" id="nav-menu"></nav>
+
+            <div class="p-4 border-t border-slate-800 mt-auto">
+                <button onclick="logout()" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-slate-800 rounded-lg">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 overflow-y-auto">
+            <div id="content-area"></div>
+        </main>
+    </div>
+
+    <!-- PRINTABLE RECEIPT TEMPLATE -->
+    <div id="printable-receipt" class="hidden p-8 bg-white max-w-2xl mx-auto border border-slate-300">
+        <div class="text-center border-b pb-4 mb-4">
+            <h1 class="text-2xl font-bold text-blue-900" id="rcpt-school-header">SOPHIA SCHOOL</h1>
+            <p class="text-xs text-slate-500" id="rcpt-school-sub">Tonk District, Rajasthan | Contact: +91 98290XXXXX</p>
+            <span class="inline-block bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded font-semibold mt-2">OFFICIAL FEE RECEIPT</span>
+        </div>
+        <div class="flex justify-between text-xs mb-4">
+            <div>
+                <p><strong>Receipt No:</strong> <span id="rcpt-no">REC-1001</span></p>
+                <p><strong>Student Name:</strong> <span id="rcpt-student">---</span></p>
+                <p><strong>Father / Guardian Name:</strong> <span id="rcpt-parent">---</span></p>
+                <p><strong>Scholar ID:</strong> <span id="rcpt-id">---</span></p>
+            </div>
+            <div class="text-right">
+                <p><strong>Date:</strong> <span id="rcpt-date">---</span></p>
+                <p><strong>Session:</strong> <span id="rcpt-session">2026-2027</span></p>
+                <p><strong>Class:</strong> <span id="rcpt-class">---</span></p>
+                <p><strong>Payment Mode:</strong> Cash / Online</p>
+            </div>
+        </div>
+        <table class="w-full text-xs text-left border-collapse border border-slate-200 mb-6">
+            <thead>
+                <tr class="bg-slate-50">
+                    <th class="border p-2">Description</th>
+                    <th class="border p-2 text-right">Amount (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border p-2" id="rcpt-desc">Tuition & Development Fee Payment</td>
+                    <td class="border p-2 text-right" id="rcpt-amount">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="flex justify-between items-end pt-8">
+            <div class="text-xs text-slate-400">
+                <p>Thank you for the fee payment.</p>
+                <p>Computer generated receipt. Valid across all sessions.</p>
+            </div>
+            <div class="text-center text-xs">
+                <div class="w-32 border-b border-slate-400 mb-1"></div>
+                <p class="font-semibold" id="rcpt-sig-text">Accounts Officer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP ENGINE -->
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://sophia-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        
+        let dbRef = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref("sophia_app_data_v2");
+        } catch(err) {
+            console.log("LocalStorage Fallback Mode Enabled");
+        }
+
+        let currentRole = 'principal';
+        let currentView = 'fee-records';
+        let activeSession = '2026-2027';
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-install-banner').classList.remove('hidden');
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('pwa-install-banner').classList.add('hidden');
+                });
+            }
+        }
+        function dismissInstallBanner() { document.getElementById('pwa-install-banner').classList.add('hidden'); }
+
+        const defaultData = {
+            schoolInfo: {
+                name: 'SOPHIA SCHOOL',
+                address: 'Tonk District, Rajasthan',
+                phone: '+91 98290XXXXX',
+                session: '2026-2027',
+                signatory: 'Accounts Officer'
+            },
+            students: [
+                { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', totalFee: 24000, paidFee: 18000, prevDue: 2500, session: '2026-2027', attendance: 92, result: 'A Grade (88%)', homework: 'Maths Chapter 5 Ex 5.2 Questions 1 to 10' },
+                { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', totalFee: 24000, paidFee: 24000, prevDue: 0, session: '2026-2027', attendance: 96, result: 'A+ Grade (94%)', homework: 'Science Diagram Practice' },
+                { id: 'STU103', name: 'Rahul Gurjar', parentName: 'Mukesh Gurjar', class: 'IX-B', parentMobile: '9829098765', totalFee: 22000, paidFee: 10000, prevDue: 4000, session: '2026-2027', attendance: 85, result: 'B Grade (74%)', homework: 'English Essay Writing' }
+            ],
+            teachers: [
+                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A', mobile: '9829111111', pass: 'teacher123' },
+                { id: 'T102', name: 'Anita Verma', subject: 'Science', classAssigned: 'IX-B', mobile: '9829222222', pass: 'teacher123' }
+            ],
+            inventory: [
+                { id: 1, name: 'Exam Answer Sheets', qty: 1200, unit: 'Pcs' },
+                { id: 2, name: 'School Crest Badges', qty: 350, unit: 'Pcs' }
+            ],
+            expenses: [
+                { id: 1, desc: 'School Bus Diesel', amount: 4500, date: '2026-10-12' },
+                { id: 2, desc: 'Stationery & Marker Pens', amount: 1200, date: '2026-10-14' }
+            ],
+            messages: [
+                { studentId: 'STU101', sender: 'Teacher', text: 'Aarav ne aaj maths test me top kiya hai!', time: '10:30 AM' },
+                { studentId: 'STU101', sender: 'Parent', text: 'Thank you teacher. Ghar par bhi practice karwa rahe hain.', time: '10:35 AM' }
+            ],
+            notices: [
+                { id: 1, title: 'Half-Yearly Examination Schedule', date: '2026-10-10', content: 'Exams begin from Oct 20. Timetable uploaded in portal.' }
+            ]
+        };
+
+        let localAppData = defaultData;
+
+        if(dbRef) {
+            dbRef.on('value', (snapshot) => {
+                const val = snapshot.val();
+                if(val) {
+                    localAppData = val;
+                    localStorage.setItem('sophia_school_db', JSON.stringify(val));
+                } else {
+                    dbRef.set(defaultData);
+                }
+                updateSchoolBranding();
+                if(!document.getElementById('main-app').classList.contains('hidden')) {
+                    loadView(currentView);
+                }
+            });
+        } else {
+            if(!localStorage.getItem('sophia_school_db')) {
+                localStorage.setItem('sophia_school_db', JSON.stringify(defaultData));
+            }
+            localAppData = JSON.parse(localStorage.getItem('sophia_school_db'));
+            updateSchoolBranding();
+        }
+
+        function getDB() { return localAppData; }
+        
+        function saveDB(data) {
+            localAppData = data;
+            localStorage.setItem('sophia_school_db', JSON.stringify(data));
+            if(dbRef) {
+                dbRef.set(data);
+            }
+            updateSchoolBranding();
+        }
+
+        function updateSchoolBranding() {
+            const db = getDB();
+            const info = db.schoolInfo || defaultData.schoolInfo;
+            document.getElementById('login-school-name').innerText = info.name;
+            document.getElementById('login-school-sub').innerText = info.address + ' | Management Portal';
+            document.getElementById('sidebar-school-title').innerText = info.name;
+            document.getElementById('rcpt-school-header').innerText = info.name;
+            document.getElementById('rcpt-school-sub').innerText = info.address + ' | Contact: ' + info.phone;
+            document.getElementById('rcpt-sig-text').innerText = info.signatory || 'Accounts Officer';
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            ['principal', 'teacher', 'guardian'].forEach(r => {
+                const btn = document.getElementById(`btn-role-${r}`);
+                btn.className = r === role ? "flex-1 py-2 text-xs font-semibold rounded-md bg-white text-blue-900 shadow" : "flex-1 py-2 text-xs font-semibold rounded-md text-slate-600";
+            });
+            document.getElementById('lbl-username').innerText = role === 'guardian' ? "Student Scholar ID / Mobile No" : (role === 'teacher' ? "Teacher Staff ID" : "Username");
+        }
+
+        function quickLogin(role, user, pass) {
+            setRole(role);
+            document.getElementById('login-username').value = user;
+            document.getElementById('login-password').value = pass;
+            handleLogin(new Event('submit'));
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-badge').innerText = currentRole.toUpperCase();
+            renderNavigation();
+            if(currentRole === 'principal') loadView('fee-records');
+            else if(currentRole === 'guardian') loadView('guardian-portal');
+            else loadView('teacher-portal');
+            lucide.createIcons();
+        }
+
+        function logout() {
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        function renderNavigation() {
+            const nav 
+
+        
+        
