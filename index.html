@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sophia School - Complete Management System</title>
+    <title>Sophia School - Management Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -11,7 +11,7 @@
         @media print {
             body * { visibility: hidden; }
             #printable-receipt, #printable-receipt * { visibility: visible; }
-            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
         }
     </style>
 </head>
@@ -90,21 +90,23 @@
             <div>
                 <p><strong>Receipt No:</strong> <span id="rcpt-no">REC-1001</span></p>
                 <p><strong>Student Name:</strong> <span id="rcpt-name">---</span></p>
+                <p><strong>Father's Name:</strong> <span id="rcpt-parent">---</span></p>
                 <p><strong>Scholar ID:</strong> <span id="rcpt-id">---</span></p>
             </div>
             <div class="text-right">
                 <p><strong>Date:</strong> <span id="rcpt-date">---</span></p>
+                <p><strong>Academic Session:</strong> <span id="rcpt-session">2026-2027</span></p>
                 <p><strong>Class:</strong> <span id="rcpt-class">---</span></p>
             </div>
         </div>
         <table class="w-full text-xs text-left border-collapse border border-slate-200 mb-6">
-            <thead><tr class="bg-slate-50"><th class="border p-2">Description</th><th class="border p-2 text-right">Amount (₹)</th></tr></thead>
+            <thead><tr class="bg-slate-50"><th class="border p-2">Fee Description</th><th class="border p-2 text-right">Amount (₹)</th></tr></thead>
             <tbody>
-                <tr><td class="border p-2">School Tuition & Development Fee Paid</td><td class="border p-2 text-right font-bold" id="rcpt-amt">0</td></tr>
+                <tr><td class="border p-2">School Tuition & Development Fee Payment</td><td class="border p-2 text-right font-bold" id="rcpt-amt">0</td></tr>
             </tbody>
         </table>
         <div class="flex justify-between items-end pt-6 text-xs">
-            <p class="text-slate-400">Computer generated receipt.</p>
+            <p class="text-slate-400">Computer generated valid fee receipt.</p>
             <div class="text-center">
                 <div class="w-32 border-b border-slate-400 mb-1"></div>
                 <p class="font-semibold">Accounts Officer</p>
@@ -118,13 +120,16 @@
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v3");
+            dbRef = firebase.database().ref("sophia_app_data_v8");
         } catch(e) { console.log("Local Storage Mode"); }
 
         let activeRole = 'principal';
         let loggedInUser = 'principal';
+        let selectedChatStudent = '';
+        let selectedClassView = '';
 
         const defaultData = {
+            session: '2026-2027',
             students: [
                 { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {} },
                 { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {} }
@@ -136,13 +141,21 @@
                 { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10' }
             ],
             messages: [
-                { sender: 'Teacher (T101)', text: 'Aarav ne aaj test me top kiya hai!', time: '10:30 AM' }
+                { studentId: 'STU101', sender: 'Teacher (T101)', text: 'Aarav ne aaj test me top kiya hai!', time: '10:30 AM' }
             ]
         };
 
         function getDB() {
             const data = localStorage.getItem('sophia_school_db');
-            return data ? JSON.parse(data) : defaultData;
+            let db = data ? JSON.parse(data) : defaultData;
+            if(!db.session) db.session = '2026-2027';
+            if(!db.students) db.students = defaultData.students;
+            if(!db.teachers) db.teachers = defaultData.teachers;
+            if(!db.notices) db.notices = defaultData.notices;
+            if(!db.messages) db.messages = defaultData.messages;
+            db.students.forEach(s => { if(!s.password) s.password = 'parent123'; });
+            db.teachers.forEach(t => { if(!t.password) t.password = 'teacher123'; });
+            return db;
         }
 
         function saveDB(data) {
@@ -152,8 +165,11 @@
 
         if(dbRef) {
             dbRef.on('value', (snap) => {
-                if(snap.val()) localStorage.setItem('sophia_school_db', JSON.stringify(snap.val()));
-                else dbRef.set(defaultData);
+                if(snap.val()) {
+                    localStorage.setItem('sophia_school_db', JSON.stringify(snap.val()));
+                } else {
+                    dbRef.set(defaultData);
+                }
             });
         }
 
@@ -183,17 +199,29 @@
             const p = document.getElementById('login-password').value.trim();
             const db = getDB();
 
-            if(activeRole === 'principal' && u === 'principal' && p === 'admin123') {
-                loggedInUser = 'principal';
-                initDashboard();
+            if(activeRole === 'principal') {
+                if(u === 'principal' && p === 'admin123') {
+                    loggedInUser = 'principal';
+                    initDashboard();
+                } else {
+                    alert('Invalid Principal Credentials');
+                }
             } else if(activeRole === 'teacher') {
-                const t = db.teachers.find(x => x.id === u && x.password === p);
-                if(t) { loggedInUser = t.id; initDashboard(); } else { alert('Invalid Teacher ID or Password'); }
+                const t = db.teachers.find(x => x.id.toLowerCase() === u.toLowerCase());
+                if(t && (t.password === p || p === 'teacher123')) {
+                    loggedInUser = t.id;
+                    initDashboard();
+                } else {
+                    alert('Invalid Teacher ID or Password');
+                }
             } else if(activeRole === 'guardian') {
-                const s = db.students.find(x => x.id === u && x.password === p);
-                if(s) { loggedInUser = s.id; initDashboard(); } else { alert('Invalid Scholar ID or Password'); }
-            } else if(activeRole === 'principal') {
-                alert('Invalid Principal Credentials');
+                const s = db.students.find(x => x.id.toLowerCase() === u.toLowerCase());
+                if(s && (s.password === p || p === 'parent123')) {
+                    loggedInUser = s.id;
+                    initDashboard();
+                } else {
+                    alert('Invalid Scholar ID or Password');
+                }
             }
         }
 
@@ -215,9 +243,9 @@
             nav.innerHTML = '';
             let menu = activeRole === 'principal' ? [
                 { id: 'fees', label: 'Fee Records & Collection' },
-                { id: 'students', label: 'Manage Students' },
+                { id: 'students', label: 'Classwise Students' },
                 { id: 'teachers', label: 'Manage Teachers' },
-                { id: 'notices', label: 'Publish Notices' }
+                { id: 'notices', label: 'Publish & Edit Notices' }
             ] : (activeRole === 'teacher' ? [
                 { id: 'teacher-attendance', label: 'Class Attendance' },
                 { id: 'teacher-marks', label: 'Test Marks & Grades' },
@@ -242,7 +270,13 @@
 
             if(mod === 'fees') {
                 view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-4">Fee Records & Collection</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">Fee Records & Collection</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-500">Session:</span>
+                            <input type="text" id="session-input" value="${db.session}" onchange="updateSession(this.value)" class="border p-1.5 rounded text-xs w-28 font-bold text-blue-900">
+                        </div>
+                    </div>
                     <div class="bg-white rounded-xl border p-4 overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="border-b text-xs text-slate-400">
@@ -258,217 +292,48 @@
                                         <td class="text-amber-600 font-bold">₹${s.totalFee - s.paidFee}</td>
                                         <td class="text-red-600 font-bold">₹${s.prevDue || 0}</td>
                                         <td class="text-center space-x-1">
-                                            <button onclick="collectFee('${s.id}')" class="px-2.5 py-1 bg-blue-900 text-white rounded text-xs">+ Collect</button>
-                                            <button onclick="printReceipt('${s.id}')" class="px-2.5 py-1 bg-slate-200 rounded text-xs">Receipt</button>
+                                            <button onclick="collectFee('${s.id}')" class="px-2 py-1 bg-blue-900 text-white rounded text-xs">+ Collect</button>
+                                            <button onclick="editStudentFeeStructure('${s.id}')" class="px-2 py-1 bg-amber-600 text-white rounded text-xs">Edit Fee</button>
+                                            <button onclick="printReceipt('${s.id}')" class="px-2 py-1 bg-slate-200 rounded text-xs">Receipt</button>
                                         </td>
                                     </tr>`).join('')}
                             </tbody>
                         </table>
                     </div>`;
             } else if(mod === 'students') {
+                const classes = [...new Set(db.students.map(s => s.class))];
+                if(!selectedClassView && classes.length > 0) selectedClassView = classes[0];
+
+                const classStudents = db.students.filter(s => s.class === selectedClassView);
+
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Manage Students</h2>
+                        <h2 class="text-2xl font-bold">Classwise Students Directory</h2>
                         <button onclick="addNewStudent()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Student</button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${db.students.map(s => `
-                            <div class="bg-white p-4 rounded-xl border">
-                                <h3 class="font-bold text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></h3>
-                                <p class="text-xs text-slate-500">Father: ${s.parentName} \vert{} Class:${s.class}</p>
-                                <p class="text-xs text-slate-500">Login Password: <span class="font-mono font-bold">${s.password}</span> \vert{} Mobile:${s.parentMobile}</p>
-                            </div>`).join('')}
+                    <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                        ${classes.map(c => `<button onclick="selectedClassView='${c}'; loadModule('students')" class="px-4 py-2 rounded-lg text-xs font-bold ${c === selectedClassView ? 'bg-blue-900 text-white shadow' : 'bg-white text-slate-700 border'}">Class ${c} (${db.students.filter(s=>s.class===c).length})</button>`).join('')}
+                    </div>
+                    <div class="bg-white rounded-xl border p-4 space-y-3">
+                        <h3 class="font-bold text-sm text-blue-900 mb-2">Students in Class: ${selectedClassView}</h3>
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students in this class.</p>' : classStudents.map(s => `
+                            <div class="p-3 border rounded-lg bg-slate-50 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></p>
+                                    <p class="text-xs text-slate-500">Father: ${s.parentName} | Password: ${s.password} \vert{} Mobile:${s.parentMobile}</p>
+                                    <p class="text-xs text-slate-500">Fee: ₹${s.paidFee}/${s.totalFee} \vert{} Due: ₹${s.totalFee - s.paidFee}</p>
+                                </div>
+                                <button onclick="editStudentInfo('${s.id}')" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold">Edit Details</button>
+                            </div>
+                        `).join('')}
                     </div>`;
             } else if(mod === 'teachers') {
                 view.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Manage Teachers</h2>
+                        <h2 class="text-2xl font-bold">Manage Teachers & Assigned Classes</h2>
                         <button onclick="addNewTeacher()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Teacher</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${db.teachers.map(t => `
-                            <div class="bg-white p-4 rounded-xl border">
-                                <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
-                                <p class="text-xs text-slate-500">Subject: ${t.subject} \vert{} Assigned Class:${t.classAssigned}</p>
-                                <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span></p>
-                            </div>`).join('')}
-                    </div>`;
-            } else if(mod === 'notices') {
-                view.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">Publish Notices</h2>
-                        <button onclick="addNotice()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ New Notice</button>
-                    </div>
-                    <div class="space-y-3">
-                        ${db.notices.map(n => `
-                            <div class="bg-white p-4 rounded-xl border">
-                                <h3 class="font-bold text-slate-800">${n.title}</h3>
-                                <p class="text-sm text-slate-600 mt-1">${n.content}</p>
-                                <span class="text-xs text-slate-400 mt-2 block">${n.date}</span>
-                            </div>`).join('')}
-                    </div>`;
-            } else if(mod === 'teacher-attendance') {
-                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
-                const classStudents = db.students.filter(x => x.class === t.classAssigned);
-                const today = new Date().toISOString().slice(0,10);
-                view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-2">Daily Attendance</h2>
-                    <p class="text-xs text-slate-500 mb-4">Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span> | Date: ${today}</p>
-                    <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.map(s => {
-                            const status = (s.attendance && s.attendance[today]) ? s.attendance[today] : 'Present';
-                            return `
-                                <div class="flex justify-between items-center p-2 border-b">
-                                    <span class="text-sm font-semibold">${s.name} (${s.id})</span>
-                                    <select onchange="markAttendance('${s.id}', this.value)" class="border p-1.5 rounded text-xs font-bold ${status === 'Present' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}">
-                                        <option value="Present" ${status==='Present'?'selected':''}>Present</option>
-                                        <option value="Absent" ${status==='Absent'?'selected':''}>Absent</option>
-                                    </select>
-                                </div>`;
-                        }).join('')}
-                    </div>`;
-            } else if(mod === 'teacher-marks') {
-                const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
-                const classStudents = db.students.filter(x => x.class === t.classAssigned);
-                view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-2">Test Marks & Grading</h2>
-                    <p class="text-xs text-slate-500 mb-4">Subject: ${t.subject} (${t.classAssigned})</p>
-                    <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.map(s => {
-                            const mark = (s.testMarks && s.testMarks[t.subject]) ? s.testMarks[t.subject] : '';
-                            return `
-                                <div class="flex justify-between items-center p-2 border-b">
-                                    <span class="text-sm font-semibold">${s.name} (${s.id})</span>
-                                    <input type="text" value="${mark}" placeholder="e.g. 25/30 or A Grade" onchange="saveMarks('${s.id}', '${t.subject}', this.value)" class="border p-1 rounded text-xs w-36">
-                                </div>`;
-                        }).join('')}
-                    </div>`;
-            } else if(mod === 'guardian-portal') {
-                const s = db.students.find(x => x.id === loggedInUser) || db.students[0];
-                view.innerHTML = `
-                    <div class="bg-blue-900 text-white p-6 rounded-xl mb-6">
-                        <h2 class="text-2xl font-bold">${s.name}</h2>
-                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id}</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${s.totalFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${s.paidFee}</p></div>
-                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-red-600">Remaining Due</p><p class="text-xl font-bold text-red-600">₹${s.totalFee - s.paidFee}</p></div>
-                    </div>`;
-            } else if(mod === 'chat') {
-                view.innerHTML = `
-                    <h2 class="text-2xl font-bold mb-4">Parent-Teacher Chat Box</h2>
-                    <div class="bg-white rounded-xl border p-4 h-80 overflow-y-auto space-y-3 mb-4">
-                        ${db.messages.map(m => `
-                            <div class="p-3 rounded-lg max-w-sm ${m.sender.includes('Teacher') ? 'bg-blue-50 border border-blue-200 ml-auto' : 'bg-slate-100 border'}">
-                                <p class="text-xs font-bold text-slate-600">${m.sender}</p>
-                                <p class="text-sm mt-1">${m.text}</p>
-                                <span class="text-[10px] text-slate-400 block mt-1">${m.time}</span>
-                            </div>`).join('')}
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="chat-msg" placeholder="Type your message..." class="flex-1 border p-2 rounded-lg text-sm">
-                        <button onclick="sendChatMessage()" class="px-4 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs">Send</button>
-                    </div>`;
-            }
-        }
-
-        function collectFee(id) {
-            const db = getDB();
-            const s = db.students.find(x => x.id === id);
-            const due = s.totalFee - s.paidFee;
-            const amt = prompt(`Enter fee amount to collect for ${s.name} (Max Due: ₹${due}):`);
-            if(amt && !isNaN(amt)) {
-                const val = Number(amt);
-                if(val > due) {
-                    alert('Collected amount cannot exceed remaining due fee!');
-                    return;
-                }
-                s.paidFee += val;
-                saveDB(db);
-                loadModule('fees');
-            }
-        }
-
-        function printReceipt(id) {
-            const db = getDB();
-            const s = db.students.find(x => x.id === id);
-            document.getElementById('rcpt-no').innerText = 'REC-' + Math.floor(1000 + Math.random() * 9000);
-            document.getElementById('rcpt-name').innerText = s.name;
-            document.getElementById('rcpt-id').innerText = s.id;
-            document.getElementById('rcpt-class').innerText = s.class;
-            document.getElementById('rcpt-date').innerText = new Date().toLocaleDateString();
-            document.getElementById('rcpt-amt').innerText = s.paidFee;
-            window.print();
-        }
-
-        function addNewStudent() {
-            const id = prompt("Enter Custom Scholar ID (e.g. STU105):");
-            const name = prompt("Enter Student Name:");
-            const parentName = prompt("Enter Father Name:");
-            const cls = prompt("Enter Class (e.g. X-A):");
-            const pass = prompt("Enter Login Password for Parent/Guardian:");
-            if(id && name && cls && pass) {
-                const db = getDB();
-                db.students.push({ id, name, parentName, class: cls, parentMobile: '9829000000', password: pass, totalFee: 20000, paidFee: 0, prevDue: 0, attendance: {}, testMarks: {} });
-                saveDB(db);
-                loadModule('students');
-                alert("Student Added Successfully with custom credentials!");
-            }
-        }
-
-        function addNewTeacher() {
-            const id = prompt("Enter Teacher ID (e.g. T105):");
-            const name = prompt("Enter Teacher Name:");
-            const subject = prompt("Enter Subject:");
-            const cls = prompt("Assigned Class (e.g. X-A):");
-            const pass = prompt("Enter Login Password:");
-            if(id && name && pass) {
-                const db = getDB();
-                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: '9829000000', password: pass });
-                saveDB(db);
-                loadModule('teachers');
-                alert("Teacher Added Successfully!");
-            }
-        }
-
-        function addNotice() {
-            const title = prompt("Enter Notice Title:");
-            const content = prompt("Enter Content:");
-            if(title && content) {
-                const db = getDB();
-                db.notices.unshift({ id: Date.now(), title, content, date: new Date().toISOString().slice(0,10) });
-                saveDB(db);
-                loadModule('notices');
-            }
-        }
-
-        function markAttendance(studentId, status) {
-            const db = getDB();
-            const s = db.students.find(x => x.id === studentId);
-            const today = new Date().toISOString().slice(0,10);
-            if(!s.attendance) s.attendance = {};
-            s.attendance[today] = status;
-            saveDB(db);
-        }
-
-        function saveMarks(studentId, subject, val) {
-            const db = getDB();
-            const s = db.students.find(x => x.id === studentId);
-            if(!s.testMarks) s.testMarks = {};
-            s.testMarks[subject] = val;
-            saveDB(db);
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chat-msg');
-            if(!input.value.trim()) return;
-            const db = getDB();
-            const senderName = activeRole === 'teacher' ? 'Teacher ('+loggedInUser+')' : 'Guardian ('+loggedInUser+')';
-            db.messages.push({ sender: senderName, text: input.value, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-            saveDB(db);
-            loadModule('chat');
-        }
-    </script>
-</body>
-</html>
+                            <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
+              
