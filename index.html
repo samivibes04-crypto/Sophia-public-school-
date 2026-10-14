@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sophia School - Management Portal</title>
+    <title>Sophia Public School - Management Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -22,7 +22,7 @@
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
             <div class="text-center mb-6">
                 <div class="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-3 shadow-lg">SPS</div>
-                <h1 class="text-2xl font-bold text-slate-800">SOPHIA SCHOOL</h1>
+                <h1 class="text-2xl font-bold text-slate-800">SOPHIA PUBLIC SCHOOL</h1>
                 <p class="text-xs text-slate-500">Moti Bagh Road, Barkat Colony, Tonk, Rajasthan - 304001</p>
             </div>
 
@@ -121,12 +121,16 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
-        const firebaseConfig = { databaseURL: "https://sophia-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        // OFFICIAL FIREBASE CONFIGURATION FOR REALTIME CLOUD SYNC
+        const firebaseConfig = { 
+            databaseURL: "https://sophia-public-school-tonk-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
+        
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v23");
-        } catch(e) { console.log("Local Storage Mode"); }
+            dbRef = firebase.database().ref("sophia_school_main_db_v1");
+        } catch(e) { console.log("Firebase Init Error:", e); }
 
         let activeRole = 'principal';
         let loggedInUser = 'principal';
@@ -140,9 +144,9 @@
             sessionsData: {
                 '2026-2027': {
                     students: [
-                        { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50', yearly: 'Pending' }, homework: 'Complete Maths Ex 5.2' },
-                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' },
-                        { id: 'STU103', name: 'Rahul Saini', parentName: 'Kailash Saini', class: 'IX-B', parentMobile: '9829098765', password: 'parent123', totalFee: 22000, paidFee: 15000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 40/50', yearly: 'Pending' }, homework: 'Maths Theorem 2.1 Notes' }
+                        { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9269808030', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50', yearly: 'Pending' }, homework: 'Complete Maths Ex 5.2' },
+                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9660943531', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' },
+                        { id: 'STU103', name: 'Rahul Saini', parentName: 'Kailash Saini', class: 'IX-B', parentMobile: '9269808030', password: 'parent123', totalFee: 22000, paidFee: 15000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 40/50', yearly: 'Pending' }, homework: 'Maths Theorem 2.1 Notes' }
                     ],
                     notices: [
                         { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10', fileUrl: '', fileName: '' }
@@ -195,13 +199,17 @@
 
         function saveDB(data) {
             localStorage.setItem('sophia_school_db', JSON.stringify(data));
-            if(dbRef) dbRef.set(data);
+            if(dbRef) {
+                dbRef.set(data).catch(err => console.log("Firebase Save Error:", err));
+            }
         }
 
+        // REALTIME LISTENER FOR INSTANT CLOUD SYNC ACROSS ALL DEVICES
         if(dbRef) {
             dbRef.on('value', (snap) => {
-                if(snap.val()) {
-                    localStorage.setItem('sophia_school_db', JSON.stringify(snap.val()));
+                const val = snap.val();
+                if(val) {
+                    localStorage.setItem('sophia_school_db', JSON.stringify(val));
                     if(!document.getElementById('main-dashboard').classList.contains('hidden')) {
                         const currentMod = document.querySelector('#nav-links button.bg-slate-800')?.dataset?.id || 'fees';
                         loadModule(currentMod);
@@ -209,6 +217,8 @@
                 } else {
                     dbRef.set(defaultData);
                 }
+            }, (error) => {
+                console.log("Firebase Read Error:", error);
             });
         }
 
@@ -294,7 +304,6 @@
                     if(s) foundS = s;
                 });
                 if(foundS) {
-                    // FETCHING THE EXACT STUDENT'S PARENT MOBILE NUMBER
                     const mobile = foundS.parentMobile || '9269808030';
                     const msg = encodeURIComponent(`Respected Parent, password recovery request for student ${foundS.name} (Scholar ID: ${foundS.id}). Your Guardian Portal password is: ${foundS.password}`);
                     window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
