@@ -329,4 +329,146 @@
                     </div>`;
             } else if(mod === 'teacher-marks') {
                 const t = db.teachers.find(x => x.id === loggedInUser) || db.teachers[0];
-                const classStuden
+                const classStudents = db.students.filter(x => x.class === t.classAssigned);
+                view.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-2">Test Marks & Grading</h2>
+                    <p class="text-xs text-slate-500 mb-4">Subject: ${t.subject} (${t.classAssigned})</p>
+                    <div class="bg-white rounded-xl border p-4 space-y-3">
+                        ${classStudents.map(s => {
+                            const mark = (s.testMarks && s.testMarks[t.subject]) ? s.testMarks[t.subject] : '';
+                            return `
+                                <div class="flex justify-between items-center p-2 border-b">
+                                    <span class="text-sm font-semibold">${s.name} (${s.id})</span>
+                                    <input type="text" value="${mark}" placeholder="e.g. 25/30 or A Grade" onchange="saveMarks('${s.id}', '${t.subject}', this.value)" class="border p-1 rounded text-xs w-36">
+                                </div>`;
+                        }).join('')}
+                    </div>`;
+            } else if(mod === 'guardian-portal') {
+                const s = db.students.find(x => x.id === loggedInUser) || db.students[0];
+                view.innerHTML = `
+                    <div class="bg-blue-900 text-white p-6 rounded-xl mb-6">
+                        <h2 class="text-2xl font-bold">${s.name}</h2>
+                        <p class="text-xs text-blue-200">Class: ${s.class} | Scholar ID: ${s.id}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-slate-400">Total Fee</p><p class="text-xl font-bold">₹${s.totalFee}</p></div>
+                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-emerald-600">Paid Fee</p><p class="text-xl font-bold text-emerald-600">₹${s.paidFee}</p></div>
+                        <div class="bg-white p-4 rounded-xl border"><p class="text-xs text-red-600">Remaining Due</p><p class="text-xl font-bold text-red-600">₹${s.totalFee - s.paidFee}</p></div>
+                    </div>`;
+            } else if(mod === 'chat') {
+                view.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-4">Parent-Teacher Chat Box</h2>
+                    <div class="bg-white rounded-xl border p-4 h-80 overflow-y-auto space-y-3 mb-4">
+                        ${db.messages.map(m => `
+                            <div class="p-3 rounded-lg max-w-sm ${m.sender.includes('Teacher') ? 'bg-blue-50 border border-blue-200 ml-auto' : 'bg-slate-100 border'}">
+                                <p class="text-xs font-bold text-slate-600">${m.sender}</p>
+                                <p class="text-sm mt-1">${m.text}</p>
+                                <span class="text-[10px] text-slate-400 block mt-1">${m.time}</span>
+                            </div>`).join('')}
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="chat-msg" placeholder="Type your message..." class="flex-1 border p-2 rounded-lg text-sm">
+                        <button onclick="sendChatMessage()" class="px-4 py-2 bg-blue-900 text-white rounded-lg font-bold text-xs">Send</button>
+                    </div>`;
+            }
+        }
+
+        function collectFee(id) {
+            const db = getDB();
+            const s = db.students.find(x => x.id === id);
+            const due = s.totalFee - s.paidFee;
+            const amt = prompt(`Enter fee amount to collect for ${s.name} (Max Due: ₹${due}):`);
+            if(amt && !isNaN(amt)) {
+                const val = Number(amt);
+                if(val > due) {
+                    alert('Collected amount cannot exceed remaining due fee!');
+                    return;
+                }
+                s.paidFee += val;
+                saveDB(db);
+                loadModule('fees');
+            }
+        }
+
+        function printReceipt(id) {
+            const db = getDB();
+            const s = db.students.find(x => x.id === id);
+            document.getElementById('rcpt-no').innerText = 'REC-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('rcpt-name').innerText = s.name;
+            document.getElementById('rcpt-id').innerText = s.id;
+            document.getElementById('rcpt-class').innerText = s.class;
+            document.getElementById('rcpt-date').innerText = new Date().toLocaleDateString();
+            document.getElementById('rcpt-amt').innerText = s.paidFee;
+            window.print();
+        }
+
+        function addNewStudent() {
+            const id = prompt("Enter Custom Scholar ID (e.g. STU105):");
+            const name = prompt("Enter Student Name:");
+            const parentName = prompt("Enter Father Name:");
+            const cls = prompt("Enter Class (e.g. X-A):");
+            const pass = prompt("Enter Login Password for Parent/Guardian:");
+            if(id && name && cls && pass) {
+                const db = getDB();
+                db.students.push({ id, name, parentName, class: cls, parentMobile: '9829000000', password: pass, totalFee: 20000, paidFee: 0, prevDue: 0, attendance: {}, testMarks: {} });
+                saveDB(db);
+                loadModule('students');
+                alert("Student Added Successfully with custom credentials!");
+            }
+        }
+
+        function addNewTeacher() {
+            const id = prompt("Enter Teacher ID (e.g. T105):");
+            const name = prompt("Enter Teacher Name:");
+            const subject = prompt("Enter Subject:");
+            const cls = prompt("Assigned Class (e.g. X-A):");
+            const pass = prompt("Enter Login Password:");
+            if(id && name && pass) {
+                const db = getDB();
+                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: '9829000000', password: pass });
+                saveDB(db);
+                loadModule('teachers');
+                alert("Teacher Added Successfully!");
+            }
+        }
+
+        function addNotice() {
+            const title = prompt("Enter Notice Title:");
+            const content = prompt("Enter Content:");
+            if(title && content) {
+                const db = getDB();
+                db.notices.unshift({ id: Date.now(), title, content, date: new Date().toISOString().slice(0,10) });
+                saveDB(db);
+                loadModule('notices');
+            }
+        }
+
+        function markAttendance(studentId, status) {
+            const db = getDB();
+            const s = db.students.find(x => x.id === studentId);
+            const today = new Date().toISOString().slice(0,10);
+            if(!s.attendance) s.attendance = {};
+            s.attendance[today] = status;
+            saveDB(db);
+        }
+
+        function saveMarks(studentId, subject, val) {
+            const db = getDB();
+            const s = db.students.find(x => x.id === studentId);
+            if(!s.testMarks) s.testMarks = {};
+            s.testMarks[subject] = val;
+            saveDB(db);
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-msg');
+            if(!input.value.trim()) return;
+            const db = getDB();
+            const senderName = activeRole === 'teacher' ? 'Teacher ('+loggedInUser+')' : 'Guardian ('+loggedInUser+')';
+            db.messages.push({ sender: senderName, text: input.value, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            saveDB(db);
+            loadModule('chat');
+        }
+    </script>
+</body>
+</html>
