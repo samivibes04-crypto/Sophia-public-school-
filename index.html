@@ -23,7 +23,7 @@
             <div class="text-center mb-6">
                 <div class="w-20 h-20 bg-blue-900 text-white rounded-full flex items-center justify-center mx-auto text-2xl font-bold mb-3 shadow-lg">SPS</div>
                 <h1 class="text-2xl font-bold text-slate-800">SOPHIA SCHOOL</h1>
-                <p class="text-xs text-slate-500">Tonk, Rajasthan | Management Portal</p>
+                <p class="text-xs text-slate-500">Moti Bagh Road, Barkat Colony, Tonk, Rajasthan - 304001</p>
             </div>
 
             <!-- Role Selector -->
@@ -44,6 +44,10 @@
                 </div>
                 <button type="submit" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800 transition shadow">Login Now</button>
             </form>
+
+            <div class="mt-4 text-center">
+                <button type="button" onclick="forgotPasswordPrompt()" class="text-xs font-bold text-blue-800 hover:underline">Forgot Password? (Get via WhatsApp)</button>
+            </div>
 
             <div class="mt-6 pt-4 border-t text-center">
                 <p class="text-xs text-slate-400 mb-2">Quick 1-Click Access:</p>
@@ -82,8 +86,9 @@
     <!-- PRINTABLE RECEIPT -->
     <div id="printable-receipt" class="hidden p-8 bg-white max-w-xl mx-auto border my-10 shadow-lg">
         <div class="text-center border-b pb-4 mb-4">
-            <h1 class="text-2xl font-bold text-blue-900">SOPHIA SCHOOL</h1>
-            <p class="text-xs text-slate-500">Tonk District, Rajasthan | Contact: +91 98290XXXXX</p>
+            <h1 class="text-2xl font-bold text-blue-900">SOPHIA PUBLIC SCHOOL</h1>
+            <p class="text-xs text-slate-600 mt-1">Moti Bagh Road, Barkat Colony, Tonk, Rajasthan - 304001</p>
+            <p class="text-xs text-slate-600">Contact No: 9269808030 / 9660943531</p>
             <span class="inline-block bg-slate-100 text-slate-700 text-xs px-3 py-1 rounded font-semibold mt-2">OFFICIAL FEE RECEIPT</span>
         </div>
         <div class="flex justify-between text-xs mb-4">
@@ -120,7 +125,7 @@
         let dbRef = null;
         try {
             firebase.initializeApp(firebaseConfig);
-            dbRef = firebase.database().ref("sophia_app_data_v14");
+            dbRef = firebase.database().ref("sophia_app_data_v22");
         } catch(e) { console.log("Local Storage Mode"); }
 
         let activeRole = 'principal';
@@ -128,6 +133,7 @@
         let selectedChatStudent = '';
         let selectedChatSubject = '';
         let selectedClassView = '';
+        let selectedTeacherActiveClass = '';
 
         const defaultData = {
             currentSession: '2026-2027',
@@ -135,18 +141,22 @@
                 '2026-2027': {
                     students: [
                         { id: 'STU101', name: 'Aarav Sharma', parentName: 'Ramesh Sharma', class: 'X-A', parentMobile: '9829012345', password: 'parent123', totalFee: 24000, paidFee: 18000, prevDue: 2500, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 45/50, Science: 42/50', yearly: 'Pending' }, homework: 'Complete Maths Ex 5.2' },
-                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' }
+                        { id: 'STU102', name: 'Priya Verma', parentName: 'Suresh Verma', class: 'X-A', parentMobile: '9829054321', password: 'parent123', totalFee: 24000, paidFee: 24000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 48/50, Science: 49/50', yearly: 'Pending' }, homework: 'Science Diagram Practice' },
+                        { id: 'STU103', name: 'Rahul Saini', parentName: 'Kailash Saini', class: 'IX-B', parentMobile: '9829098765', password: 'parent123', totalFee: 22000, paidFee: 15000, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Maths: 40/50', yearly: 'Pending' }, homework: 'Maths Theorem 2.1 Notes' }
                     ],
                     notices: [
                         { id: 1, title: 'Half-Yearly Exams', content: 'Exams begin from Oct 20.', date: '2026-10-10', fileUrl: '', fileName: '' }
                     ],
                     messages: [
                         { studentId: 'STU101', subject: 'Mathematics', sender: 'Teacher (Rohit Sharma)', text: 'Aarav is performing excellent in Maths!', time: '10:30 AM' }
+                    ],
+                    inventory: [
+                        { id: 1, itemName: 'A4 Printing Paper Bundles', category: 'Stationery', totalIn: 50, totalOut: 12, unit: 'Bundles', lastUpdated: '2026-10-01' }
                     ]
                 }
             },
             teachers: [
-                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A', mobile: '9829111111', password: 'teacher123' },
+                { id: 'T101', name: 'Rohit Sharma', subject: 'Mathematics', classAssigned: 'X-A, IX-B', mobile: '9829111111', password: 'teacher123' },
                 { id: 'T102', name: 'Sunil Gupta', subject: 'Science', classAssigned: 'X-A', mobile: '9829222222', password: 'teacher123' }
             ]
         };
@@ -159,11 +169,16 @@
             if(!db.teachers) db.teachers = defaultData.teachers;
 
             if(!db.sessionsData[db.currentSession]) {
-                db.sessionsData[db.currentSession] = { students: [], notices: [], messages: [] };
+                db.sessionsData[db.currentSession] = { students: [], notices: [], messages: [], inventory: [] };
             }
 
             db.teachers.forEach(t => { if(!t.password) t.password = 'teacher123'; });
             Object.keys(db.sessionsData).forEach(ses => {
+                if(!db.sessionsData[ses].students) db.sessionsData[ses].students = [];
+                if(!db.sessionsData[ses].notices) db.sessionsData[ses].notices = [];
+                if(!db.sessionsData[ses].messages) db.sessionsData[ses].messages = [];
+                if(!db.sessionsData[ses].inventory) db.sessionsData[ses].inventory = [];
+
                 db.sessionsData[ses].students.forEach(s => { 
                     if(!s.password) s.password = 'parent123';
                     if(!s.homework) s.homework = 'No homework assigned yet.';
@@ -250,6 +265,42 @@
             }
         }
 
+        function forgotPasswordPrompt() {
+            const roleInput = prompt("Enter your role to recover password (type 'teacher' or 'guardian'):");
+            if(!roleInput) return;
+            const r = roleInput.trim().toLowerCase();
+            const idInput = prompt(r === 'teacher' ? "Enter your Teacher ID (e.g. T101):" : "Enter your Scholar ID (e.g. STU101):");
+            if(!idInput) return;
+            const targetId = idInput.trim().toLowerCase();
+            const db = getDB();
+
+            if(r === 'teacher') {
+                const t = db.teachers.find(x => x.id.toLowerCase() === targetId);
+                if(t) {
+                    const mobile = t.mobile || '9269808030';
+                    const msg = encodeURIComponent(`Hello ${t.name}, your Sophia School Teacher Portal password is: ${t.password}`);
+                    window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
+                } else {
+                    alert("Teacher ID not found!");
+                }
+            } else if(r === 'guardian') {
+                let foundS = null;
+                Object.keys(db.sessionsData).forEach(ses => {
+                    const s = db.sessionsData[ses].students.find(x => x.id.toLowerCase() === targetId);
+                    if(s) foundS = s;
+                });
+                if(foundS) {
+                    const mobile = foundS.parentMobile || '9269808030';
+                    const msg = encodeURIComponent(`Hello ${foundS.parentName}, your Sophia School Guardian Portal password for student ${foundS.name} (ID: ${foundS.id}) is: ${foundS.password}`);
+                    window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
+                } else {
+                    alert("Scholar ID not found!");
+                }
+            } else {
+                alert("Invalid role entered. Please type 'teacher' or 'guardian'.");
+            }
+        }
+
         function initDashboard() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-dashboard').classList.remove('hidden');
@@ -270,9 +321,10 @@
                 { id: 'fees', label: 'Fee Records & Collection' },
                 { id: 'students', label: 'Classwise Students' },
                 { id: 'teachers', label: 'Manage Teachers' },
+                { id: 'inventory', label: 'School Stock & Inventory' },
                 { id: 'notices', label: 'Publish & Edit Notices' }
             ] : (activeRole === 'teacher' ? [
-                { id: 'teacher-students', label: 'My Class Students & Chat' },
+                { id: 'teacher-students', label: 'My Classes & Parent Chat' },
                 { id: 'teacher-attendance', label: 'Class Attendance' },
                 { id: 'teacher-marks', label: 'Test Marks & Grades' },
                 { id: 'teacher-homework', label: 'Assign Homework & Exams' },
@@ -297,19 +349,48 @@
             });
         }
 
+        function getTeacherAssignedClasses(teacher) {
+            if (!teacher || !teacher.classAssigned) return ['X-A'];
+            return teacher.classAssigned.split(',').map(c => c.trim()).filter(c => c);
+        }
+
+        function renderTeacherClassSelector(teacher) {
+            const classesList = getTeacherAssignedClasses(teacher);
+            if (!selectedTeacherActiveClass || !classesList.includes(selectedTeacherActiveClass)) {
+                selectedTeacherActiveClass = classesList[0] || 'X-A';
+            }
+
+            return `
+                <div class="mb-5 flex items-center gap-2 bg-white p-3 rounded-xl border shadow-sm">
+                    <span class="text-xs font-bold text-slate-700">Select Class to Manage:</span>
+                    <div class="flex gap-2">
+                        ${classesList.map(c => `
+                            <button onclick="selectedTeacherActiveClass='${c}'; loadModule(document.querySelector('#nav-links button.bg-slate-800')?.dataset?.id || 'teacher-students')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${c === selectedTeacherActiveClass ? 'bg-blue-900 text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
+                                Class ${c}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
         function loadModule(mod) {
             const db = getDB();
             const currSession = db.currentSession;
-            const sessionData = db.sessionsData[currSession] || { students: [], notices: [], messages: [] };
+            const sessionData = db.sessionsData[currSession] || { students: [], notices: [], messages: [], inventory: [] };
+            const allSessions = Object.keys(db.sessionsData || {});
             const view = document.getElementById('app-view');
 
             if(mod === 'fees') {
                 view.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
                         <h2 class="text-2xl font-bold">Fee Records (${currSession})</h2>
                         <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-slate-500">Session:</span>
-                            <input type="text" id="session-input" value="${currSession}" onchange="updateSession(this.value)" class="border p-1.5 rounded text-xs w-32 font-bold text-blue-900" placeholder="e.g. 2027-2028">
+                            <button onclick="downloadDatabaseBackup()" class="px-3 py-1.5 bg-emerald-700 text-white rounded text-xs font-bold hover:bg-emerald-800 transition">📥 Download Backup (JSON)</button>
+                            <span class="text-xs font-bold text-slate-500 ml-2">Session:</span>
+                            <input type="text" list="sessions-list" id="session-input" value="${currSession}" onchange="updateSession(this.value)" class="border p-1.5 rounded text-xs w-36 font-bold text-blue-900" placeholder="e.g. 2027-2028">
+                            <datalist id="sessions-list">
+                                ${allSessions.map(s => `<option value="${s}">`).join('')}
+                            </datalist>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl border p-4 overflow-x-auto">
@@ -350,13 +431,17 @@
                     </div>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
                         <h3 class="font-bold text-sm text-blue-900 mb-2">Class: ${selectedClassView || 'None'}</h3>
-                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found.</p>' : classStudents.map(s => `
-                            <div class="p-3 border rounded-lg bg-slate-50 flex justify-between items-center">
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in this class view.</p>' : classStudents.map(s => `
+                            <div class="p-3 border rounded-lg bg-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                                 <div>
                                     <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs font-mono text-blue-900">(${s.id})</span></p>
-                                    <p class="text-xs text-slate-500">Father: ${s.parentName} | Password: ${s.password} \vert{} Mobile:${s.parentMobile}</p>
+                                    <p class="text-xs text-slate-500">Father: ${s.parentName} | Pass: ${s.password} \vert{} Mob:${s.parentMobile}</p>
                                 </div>
-                                <button onclick="editStudentInfo('${s.id}')" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold">Edit</button>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="editStudentInfo('${s.id}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold">Edit</button>
+                                    <button onclick="shiftStudentClass('${s.id}')" class="px-2.5 py-1 bg-blue-50 text-blue-900 border border-blue-200 rounded text-xs font-bold">Shift Class</button>
+                                    <button onclick="deleteStudent('${s.id}')" class="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-bold">Remove</button>
+                                </div>
                             </div>
                         `).join('')}
                     </div>`;
@@ -371,28 +456,74 @@
                             <div class="bg-white p-4 rounded-xl border flex justify-between items-start">
                                 <div>
                                     <h3 class="font-bold text-slate-800">${t.name} <span class="text-xs font-mono text-blue-900">(${t.id})</span></h3>
-                                    <p class="text-xs text-slate-500">Subject: <span class="font-bold text-slate-800">${t.subject}</span> | Class: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
+                                    <p class="text-xs text-slate-500">Subject: <span class="font-bold text-slate-800">${t.subject}</span></p>
+                                    <p class="text-xs text-slate-500">Classes Assigned: <span class="font-bold text-blue-900">${t.classAssigned}</span></p>
                                     <p class="text-xs text-slate-500">Password: <span class="font-mono font-bold">${t.password}</span></p>
                                 </div>
                                 <div class="space-y-1">
-                                    <button onclick="editTeacherClass('${t.id}')" class="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded border">Class</button>
+                                    <button onclick="editTeacherClass('${t.id}')" class="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded border">Classes</button>
                                     <button onclick="editTeacherInfo('${t.id}')" class="w-full px-2 py-1 bg-blue-50 text-blue-900 text-xs font-bold rounded border border-blue-200">Edit</button>
                                 </div>
                             </div>`).join('')}
                     </div>`;
+            } else if(mod === 'inventory') {
+                const invList = sessionData.inventory || [];
+                view.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold">School Stock & Inventory (${currSession})</h2>
+                            <p class="text-xs text-slate-500">Manage school materials, purchases (In) and issuance/consumption (Out).</p>
+                        </div>
+                        <button onclick="addNewInventoryItem()" class="px-3 py-1.5 bg-blue-900 text-white rounded text-xs font-bold">+ Add New Item</button>
+                    </div>
+                    <div class="bg-white rounded-xl border p-4 overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b text-xs text-slate-400">
+                                <tr>
+                                    <th class="py-2">Item Name</th>
+                                    <th class="py-2">Category</th>
+                                    <th class="py-2 text-center">Total In</th>
+                                    <th class="py-2 text-center">Total Out</th>
+                                    <th class="py-2 text-center">Available Stock</th>
+                                    <th class="py-2 text-right">Actions (In / Out)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${invList.length === 0 ? '<tr><td colspan="6" class="text-center py-6 text-xs text-slate-400">No inventory items added yet. Click "+ Add New Item" above.</td></tr>' : invList.map(item => {
+                                    const available = item.totalIn - item.totalOut;
+                                    return `
+                                        <tr class="border-b">
+                                            <td class="py-3 font-semibold">${item.itemName}<br><span class="text-[10px] text-slate-400">Unit: ${item.unit} \vert{} Updated:${item.lastUpdated}</span></td>
+                                            <td><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-bold">${item.category}</span></td>
+                                            <td class="text-center text-emerald-600 font-bold">+${item.totalIn}</td>
+                                            <td class="text-center text-red-600 font-bold">-${item.totalOut}</td>
+                                            <td class="text-center"><span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold ${available > 5 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}">${available}${item.unit}</span></td>
+                                            <td class="text-right space-x-1">
+                                                <button onclick="stockEntry(${item.id}, 'in')" class="px-2 py-1 bg-emerald-700 text-white rounded text-xs font-bold">+ In</button>
+                                                <button onclick="stockEntry(${item.id}, 'out')" class="px-2 py-1 bg-red-700 text-white rounded text-xs font-bold">- Out</button>
+                                                <button onclick="deleteStockItem(${item.id})" class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-bold">Delete</button>
+                                            </td>
+                                        </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
             } else if(mod === 'teacher-students') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
-                const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
+                const classesSelectorHtml = renderTeacherClassSelector(t);
+                const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
 
                 view.innerHTML = `
-                    <div class="bg-blue-900 text-white p-5 rounded-xl mb-6 shadow-md">
-                        <h2 class="text-xl font-bold">${t.name} (My Class: ${t.classAssigned})</h2>
+                    <div class="bg-blue-900 text-white p-5 rounded-xl mb-4 shadow-md">
+                        <h2 class="text-xl font-bold">${t.name} (Classes: ${t.classAssigned})</h2>
                         <p class="text-xs text-blue-200">Subject Assigned: ${t.subject} | ID: ${t.id}</p>
                     </div>
 
-                    <h3 class="font-bold text-lg mb-3">Student List & Parent Chat</h3>
+                    ${classesSelectorHtml}
+
+                    <h3 class="font-bold text-lg mb-3">Students in Class ${selectedTeacherActiveClass}</h3>
                     <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in assigned class ('+t.classAssigned+').</p>' : classStudents.map(s => `
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in class ' + selectedTeacherActiveClass + '.</p>' : classStudents.map(s => `
                             <div class="p-3 border rounded-lg bg-slate-50 flex justify-between items-center">
                                 <div>
                                     <p class="font-bold text-sm text-slate-800">${s.name} <span class="text-xs text-slate-500">(${s.id})</span></p>
@@ -404,13 +535,18 @@
                     </div>`;
             } else if(mod === 'teacher-attendance') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
-                const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
+                const classesSelectorHtml = renderTeacherClassSelector(t);
+                const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
                 const today = new Date().toISOString().slice(0,10);
+
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Daily Attendance (${currSession})</h2>
-                    <p class="text-xs text-slate-500 mb-4">Assigned Class: <span class="font-bold text-blue-900">${t.classAssigned}</span> | Date: ${today}</p>
+                    <p class="text-xs text-slate-500 mb-4">Date: ${today}</p>
+                    
+                    ${classesSelectorHtml}
+
                     <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.map(s => {
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students found in Class ' + selectedTeacherActiveClass + '.</p>' : classStudents.map(s => {
                             const status = (s.attendance && s.attendance[today]) ? s.attendance[today] : 'Present';
                             return `
                                 <div class="flex justify-between items-center p-2 border-b">
@@ -424,12 +560,17 @@
                     </div>`;
             } else if(mod === 'teacher-marks') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
-                const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
+                const classesSelectorHtml = renderTeacherClassSelector(t);
+                const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
+
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Test Marks & Exam Results (${currSession})</h2>
-                    <p class="text-xs text-slate-500 mb-4">Subject: ${t.subject} (${t.classAssigned})</p>
+                    <p class="text-xs text-slate-500 mb-4">Subject: ${t.subject}</p>
+                    
+                    ${classesSelectorHtml}
+
                     <div class="bg-white rounded-xl border p-4 space-y-4">
-                        ${classStudents.map(s => {
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students in Class ' + selectedTeacherActiveClass + '.</p>' : classStudents.map(s => {
                             const weeklyMark = (s.testMarks && s.testMarks[t.subject]) ? s.testMarks[t.subject] : '';
                             const halfYearly = (s.examResults && s.examResults.halfYearly) ? s.examResults.halfYearly : '';
                             const yearly = (s.examResults && s.examResults.yearly) ? s.examResults.yearly : '';
@@ -455,12 +596,17 @@
                     </div>`;
             } else if(mod === 'teacher-homework') {
                 const t = db.teachers.find(x => x.id.toLowerCase() === loggedInUser.toLowerCase()) || db.teachers[0];
-                const classStudents = sessionData.students.filter(x => x.class === t.classAssigned);
+                const classesSelectorHtml = renderTeacherClassSelector(t);
+                const classStudents = sessionData.students.filter(s => s.class === selectedTeacherActiveClass);
+
                 view.innerHTML = `
                     <h2 class="text-2xl font-bold mb-2">Assign Daily Homework (${currSession})</h2>
-                    <p class="text-xs text-slate-500 mb-4">Class: ${t.classAssigned} | Subject: ${t.subject}</p>
+                    <p class="text-xs text-slate-500 mb-4">Subject: ${t.subject}</p>
+                    
+                    ${classesSelectorHtml}
+
                     <div class="bg-white rounded-xl border p-4 space-y-3">
-                        ${classStudents.map(s => `
+                        ${classStudents.length === 0 ? '<p class="text-xs text-slate-400">No students in Class ' + selectedTeacherActiveClass + '.</p>' : classStudents.map(s => `
                             <div class="p-3 border rounded-lg bg-slate-50 space-y-1">
                                 <p class="font-bold text-sm text-slate-800">${s.name} (${s.id})</p>
                                 <textarea placeholder="Enter homework details..." onchange="saveHomework('${s.id}', this.value)" class="w-full border p-2 rounded text-xs">${s.homework || ''}</textarea>
@@ -525,8 +671,11 @@
                 });
                 const s = student || sessionData.students[0] || { class: 'X-A' };
 
-                // Get teachers assigned to this student's class
-                const classTeachers = db.teachers.filter(t => t.classAssigned === s.class);
+                const classTeachers = db.teachers.filter(t => {
+                    const assignedList = getTeacherAssignedClasses(t);
+                    return assignedList.includes(s.class);
+                });
+
                 if(!selectedChatSubject && classTeachers.length > 0) selectedChatSubject = classTeachers[0].subject;
 
                 const chatMessages = (sessionData.messages || []).filter(m => 
@@ -611,6 +760,114 @@
             }
         }
 
+        function downloadDatabaseBackup() {
+            const db = getDB();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Sophia_School_Backup_${db.currentSession}_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function shiftStudentClass(studentId) {
+            const db = getDB();
+            const sessionData = db.sessionsData[db.currentSession];
+            const s = sessionData.students.find(x => x.id === studentId);
+            if(!s) return;
+
+            const newClass = prompt(`Shift student "${s.name}" to new class (Current Class: ${s.class}):`, s.class);
+            if(newClass && newClass.trim() !== '') {
+                s.class = newClass.trim();
+                selectedClassView = s.class;
+                saveDB(db);
+                loadModule('students');
+                alert(`Student successfully shifted to Class ${s.class}!`);
+            }
+        }
+
+        function deleteStudent(studentId) {
+            const db = getDB();
+            const sessionData = db.sessionsData[db.currentSession];
+            const s = sessionData.students.find(x => x.id === studentId);
+            if(!s) return;
+
+            if(confirm(`Are you sure you want to remove student "${s.name}" (ID: ${s.id}) from session ${db.currentSession}?`)) {
+                sessionData.students = sessionData.students.filter(x => x.id !== studentId);
+                if(sessionData.messages) {
+                    sessionData.messages = sessionData.messages.filter(m => m.studentId !== studentId);
+                }
+                saveDB(db);
+                loadModule('students');
+                alert("Student removed successfully!");
+            }
+        }
+
+        function addNewInventoryItem() {
+            const itemName = prompt("Enter Item Name (e.g. Science Lab Chemicals, Notebooks):");
+            if(!itemName) return;
+            const category = prompt("Enter Category (e.g. Stationery, Laboratory, Sports, Electrical):", "Stationery");
+            const qtyIn = prompt("Enter Initial Quantity Received (In):", "10");
+            const unit = prompt("Enter Unit Type (e.g. Pieces, Packets, Boxes, Bundles):", "Pieces");
+
+            if(itemName && qtyIn && !isNaN(qtyIn)) {
+                const db = getDB();
+                const sessionData = db.sessionsData[db.currentSession];
+                if(!sessionData.inventory) sessionData.inventory = [];
+
+                sessionData.inventory.push({
+                    id: Date.now(),
+                    itemName: itemName.trim(),
+                    category: category ? category.trim() : 'General',
+                    totalIn: Number(qtyIn),
+                    totalOut: 0,
+                    unit: unit ? unit.trim() : 'Units',
+                    lastUpdated: new Date().toISOString().slice(0,10)
+                });
+
+                saveDB(db);
+                loadModule('inventory');
+                alert("Inventory item added successfully!");
+            }
+        }
+
+        function stockEntry(itemId, type) {
+            const db = getDB();
+            const sessionData = db.sessionsData[db.currentSession];
+            const item = sessionData.inventory.find(x => x.id === itemId);
+            if(!item) return;
+
+            const val = prompt(`Enter quantity to ${type === 'in' ? 'add to' : 'issue from'} stock for "${item.itemName}":`, "5");
+
+            if(val && !isNaN(val)) {
+                const qty = Number(val);
+                if(type === 'in') {
+                    item.totalIn += qty;
+                } else {
+                    const available = item.totalIn - item.totalOut;
+                    if(qty > available) {
+                        alert(`Cannot issue ${qty} items! Only ${available} ${item.unit} available in stock.`);
+                        return;
+                    }
+                    item.totalOut += qty;
+                }
+                item.lastUpdated = new Date().toISOString().slice(0,10);
+                saveDB(db);
+                loadModule('inventory');
+            }
+        }
+
+        function deleteStockItem(itemId) {
+            if(confirm("Are you sure you want to delete this inventory item?")) {
+                const db = getDB();
+                const sessionData = db.sessionsData[db.currentSession];
+                sessionData.inventory = sessionData.inventory.filter(x => x.id !== itemId);
+                saveDB(db);
+                loadModule('inventory');
+            }
+        }
+
         function openTeacherStudentChat(studentId, subject) {
             selectedChatStudent = studentId;
             selectedChatSubject = subject;
@@ -618,11 +875,12 @@
         }
 
         function updateSession(val) {
-            if(!val.trim()) return;
+            const sName = val.trim();
+            if(!sName) return;
             const db = getDB();
-            db.currentSession = val.trim();
-            if(!db.sessionsData[db.currentSession]) {
-                db.sessionsData[db.currentSession] = { students: [], notices: [], messages: [] };
+            db.currentSession = sName;
+            if(!db.sessionsData[sName]) {
+                db.sessionsData[sName] = { students: [], notices: [], messages: [], inventory: [] };
             }
             saveDB(db);
             loadModule(activeRole === 'principal' ? 'fees' : 'teacher-students');
@@ -688,7 +946,7 @@
             if(id && name && cls && pass && fee) {
                 const db = getDB();
                 const sessionData = db.sessionsData[db.currentSession];
-                sessionData.students.push({ id, name, parentName, class: cls, parentMobile: '9829000000', password: pass, totalFee: Number(fee), paidFee: 0, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Not Published', yearly: 'Not Published' }, homework: 'Welcome to new session!' });
+                sessionData.students.push({ id, name, parentName, class: cls, parentMobile: '9269808030', password: pass, totalFee: Number(fee), paidFee: 0, prevDue: 0, attendance: {}, testMarks: {}, examResults: { halfYearly: 'Not Published', yearly: 'Not Published' }, homework: 'Welcome to new session!' });
                 saveDB(db);
                 loadModule('students');
                 alert("Student Added Successfully!");
@@ -699,20 +957,38 @@
             const db = getDB();
             const sessionData = db.sessionsData[db.currentSession];
             const s = sessionData.students.find(x => x.id === id);
+            if(!s) return;
+
+            const newId = prompt("Edit Scholar ID (Unique ID):", s.id);
             const name = prompt("Edit Student Name:", s.name);
             const parentName = prompt("Edit Father Name:", s.parentName);
             const cls = prompt("Edit Class:", s.class);
             const pass = prompt("Edit Password:", s.password);
             const mob = prompt("Edit Mobile:", s.parentMobile);
-            if(name && cls && pass) {
+
+            if(newId && name && cls && pass) {
+                const trimmedNewId = newId.trim();
+                if(trimmedNewId !== s.id && sessionData.students.some(x => x.id === trimmedNewId)) {
+                    alert("This Scholar ID already exists! Please choose a different ID.");
+                    return;
+                }
+
+                if(trimmedNewId !== s.id && sessionData.messages) {
+                    sessionData.messages.forEach(m => {
+                        if(m.studentId === s.id) m.studentId = trimmedNewId;
+                    });
+                }
+
+                s.id = trimmedNewId;
                 s.name = name;
                 s.parentName = parentName;
                 s.class = cls;
                 s.password = pass;
                 s.parentMobile = mob;
+
                 saveDB(db);
                 loadModule('students');
-                alert("Student details updated!");
+                alert("Student details & Scholar ID updated successfully!");
             }
         }
 
@@ -720,11 +996,11 @@
             const id = prompt("Teacher ID (e.g. T105):");
             const name = prompt("Teacher Name:");
             const subject = prompt("Subject Assigned (e.g. Mathematics, Science):");
-            const cls = prompt("Assign Class (e.g. X-A):");
+            const cls = prompt("Assign Classes (comma separated, e.g. X-A, IX-B):");
             const pass = prompt("Login Password:");
             if(id && name && cls && pass) {
                 const db = getDB();
-                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: '9829000000', password: pass });
+                db.teachers.push({ id, name, subject, classAssigned: cls, mobile: '9269808030', password: pass });
                 saveDB(db);
                 loadModule('teachers');
                 alert("Teacher Added Successfully!");
@@ -735,12 +1011,12 @@
             const db = getDB();
             const t = db.teachers.find(x => x.id === id);
             if(!t) return;
-            const newClass = prompt(`Enter new class to assign for ${t.name} (Current: ${t.classAssigned}):`, t.classAssigned);
+            const newClass = prompt(`Enter classes to assign for ${t.name} (comma separated, e.g. X-A, IX-B):`, t.classAssigned);
             if(newClass) {
                 t.classAssigned = newClass;
                 saveDB(db);
                 loadModule('teachers');
-                alert("Teacher class updated!");
+                alert("Teacher assigned classes updated!");
             }
         }
 
